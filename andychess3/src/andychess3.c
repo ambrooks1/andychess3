@@ -17,6 +17,7 @@
 
 #include "stdbool.h"
 #include "util.h"
+#include "movegen.h"
 
 struct gameState {
 	int 			board[64];
@@ -222,7 +223,62 @@ void parseFen( char fen[]) {
 }
 
 //**********************************************************************
+/*
+ * public int[] generateNonCaptures(int color ) {
+			int[] moves = new int[150];
+			int cnt=0;
 
+			long all=this.bitboard[ALLPIECES];
+
+			cnt = Movegen.getPawnPushes(cnt, moves, bitboard[WP +color], all, color, WP+color);
+
+			cnt = Movegen.getKnightNonCaptures(cnt,moves,bitboard[WN+color], ~all, WN+color);
+			cnt = Movegen.getBishopNonCaptures(cnt,moves,bitboard[WB+color],all, ~all, WB+color);
+			cnt = Movegen.getRookNonCaptures(cnt,moves,bitboard[WR+color],all, ~all, WR+color);
+			cnt = Movegen.getQueenNonCaptures(cnt,moves,bitboard[WQ+color],all, ~all, WQ+color);
+			cnt =Movegen.getKingNonCaptures(cnt,moves,bitboard[WK+color], ~all,WK+color);
+
+			if (color == BLACK) {
+				if (  canCastle(BKSIDE, all))  {
+					int move = Move2.createMove(BK, 4, 6,0, Move2.kcastle,  0)	;
+					moves[cnt++]=move;
+				}
+				if (  canCastle(BQSIDE, all) ) {
+
+					int move = Move2.createMove(BK, 4, 2, 0, Move2.qcastle,  0)	;
+					moves[cnt++]=move;
+				}
+			}
+			else {
+				if (  canCastle(WKSIDE, all)) {
+
+					int move = Move2.createMove(WK, 60, 62,0, Move2.kcastle,  0)	;
+					moves[cnt++]=move;
+				}
+				if (  canCastle(WQSIDE, all)) {
+
+					int move = Move2.createMove(WK, 60, 58,0, Move2.qcastle,  0)	;
+					moves[cnt++]=move;
+				}
+			}
+
+			int[] moves2 = new int[cnt];
+			System.arraycopy(moves, 0, moves2, 0, cnt );
+			return moves2;
+		}
+ */
+
+int*  generateNonCaptures(int color ) {     // don't forget to free moves after using
+
+		int *moves = malloc(150 * sizeof *moves);
+		int cnt=0;
+
+		U64 all= gs.bitboard[ALLPIECES];
+
+		cnt = getPawnPushes(cnt, moves, gs.bitboard[WP +gs.color], all, gs.color, WP+gs.color);
+
+		return moves;
+}
 
 int main(void) {
 	  char fen[] = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
