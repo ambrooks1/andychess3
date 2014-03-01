@@ -9,6 +9,7 @@
 #include "movegen.h"
 #include "move.h"
 #include "util.h"
+#include "magic.h"
 
  U64 knightMoveArray[64];
 
@@ -38,6 +39,72 @@
 		  x= x << 1;
 	  }
   }
+  //*****************************************************************************
+  int  getRookNonCaptures(int cnt, int* moves, U64 rooks, U64  all, U64  target, int fromType)
+  {
+
+ 	  if ( rooks ) do
+ 	  {
+ 		  int victim=-1, moveType, orderValue, move;
+
+ 		  U64  attacks;
+ 		  victim=noVictim;
+ 		  moveType=simple;
+ 		  orderValue=DEFAULT_SORT_VAL;
+ 		  int idx = bitScanForward(rooks); // square index from 0..63
+ 		  attacks = getRookAttacks(idx, all) & target;
+
+ 		  while (attacks)  {
+ 			  int squareTo = bitScanForward(attacks);
+
+ 			  move = 0
+ 					  | (63-idx)	// from
+ 					  | ( (63-squareTo) << TO_SHIFT) // to
+ 					  | (fromType  << PIECE_SHIFT) // piece moving
+ 					  | (victim << CAPTURE_SHIFT) //piece captured
+ 					  | ( simple << TYPE_SHIFT) // move type
+ 					  | (orderValue << ORDERING_SHIFT); // ordering value
+ 			  moves[cnt++]=move;
+ 			  attacks = attacks & ( attacks - 1 );
+ 		  }
+
+ 	  }
+ 	  while (rooks &= rooks-1); // reset LS1B
+
+ 	  return cnt;
+ }
+  int  getBishopNonCaptures(int cnt, int* moves, U64 bishops, U64  all, U64  target, int fromType)
+ {
+
+	  if ( bishops ) do
+	  {
+		  int victim=-1, moveType, orderValue, move;
+
+		  U64  attacks;
+		  victim=noVictim;
+		  moveType=simple;
+		  orderValue=DEFAULT_SORT_VAL;
+		  int idx = bitScanForward(bishops); // square index from 0..63
+		  attacks = getBishopAttacks(idx, all) & target;
+
+		  while (attacks)  {
+			  int squareTo = bitScanForward(attacks);
+
+			  move = 0
+					  | (63-idx)	// from
+					  | ( (63-squareTo) << TO_SHIFT) // to
+					  | (fromType  << PIECE_SHIFT) // piece moving
+					  | (victim << CAPTURE_SHIFT) //piece captured
+					  | ( simple << TYPE_SHIFT) // move type
+					  | (orderValue << ORDERING_SHIFT); // ordering value
+			  moves[cnt++]=move;
+			  attacks = attacks & ( attacks - 1 );
+		  }
+
+	  }
+	  while (bishops &= bishops-1); // reset LS1B
+	  return cnt;
+}
 
   int getKnightNonCaptures(int cnt, int* moves, U64 knights, U64 target,  int fromType)
   {

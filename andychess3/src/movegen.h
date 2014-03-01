@@ -45,6 +45,9 @@
 
 int getPawnPushes(int cnt, int* moves, U64 pawns, U64 all, int side, int pieceMoving);
 int getKnightNonCaptures(int cnt, int* moves, U64 knights, U64 target,  int fromType);
+int  getBishopNonCaptures(int cnt, int* moves, U64 bishops, U64  all, U64  target, int fromType);
+int  getRookNonCaptures(int cnt, int* moves, U64 rooks, U64  all, U64  target, int fromType);
+
 void initializeMoveGen();
 
 #endif /* MOVEGEN_H_ */

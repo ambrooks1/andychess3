@@ -19,6 +19,7 @@
 #include "util.h"
 #include "movegen.h"
 #include "move.h"
+#include "magic.h"
 
 struct gameState {
 	int 			board[64];
@@ -277,13 +278,20 @@ int * generateNonCaptures(int color ) {     // don't forget to free moves after 
 
 		cnt = getPawnPushes(cnt, moves, gs.bitboard[WP +gs.color], all, gs.color, WP+gs.color);
 		cnt = getKnightNonCaptures(cnt,moves,gs.bitboard[WN+gs.color], ~all, WN+gs.color);
+		cnt = getBishopNonCaptures(cnt,moves,gs.bitboard[WB+gs.color],all, ~all, WB+gs.color);
+		cnt = getRookNonCaptures(cnt,moves,gs.bitboard[WR+gs.color],all, ~all, WR+gs.color);
+
 		return moves;
 }
 
 int main(void) {
 
 	  initializeMoveGen();
-	  char fen[] = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+	  generateBishopAttacks();
+	  generateRookAttacks();
+
+	  //char fen[] = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+      char fen[]= "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1";
 
 	  parseFen(fen);
 	  printBoard();
