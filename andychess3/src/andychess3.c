@@ -276,10 +276,13 @@ int * generateNonCaptures(int color ) {     // don't forget to free moves after 
 		U64 all= gs.bitboard[ALLPIECES];
 
 		cnt = getPawnPushes(cnt, moves, gs.bitboard[WP +gs.color], all, gs.color, WP+gs.color);
+		cnt = getKnightNonCaptures(cnt,moves,gs.bitboard[WN+gs.color], ~all, WN+gs.color);
 		return moves;
 }
 
 int main(void) {
+
+	  initializeMoveGen();
 	  char fen[] = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 
 	  parseFen(fen);
@@ -288,6 +291,7 @@ int main(void) {
 	  printf("gen non caps");
 	  int * moves = generateNonCaptures(gs.color);
 	  printf("finished gen non caps");
+
 	  int i=0;
 	  while (moves[i] != 0) {
 		 char *moveStr = moveToString(moves[i]);

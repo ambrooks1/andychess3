@@ -6,9 +6,69 @@
  */
 
 #include "defs.h"
-#include "movegen_defs.h"
+#include "movegen.h"
 #include "move.h"
 #include "util.h"
+
+ U64 knightMoveArray[64];
+
+  U64 knightMoves (long b)
+		{
+	  	  	   U64 c = b;
+		        b ^= c;
+		        b |= (c >> 17) & C64(0x7F7F7F7F7F7F7F7F);
+		        b |= (c << 15) & C64(0x7F7F7F7F7F7F7F7F);
+		        b |= (c >> 15) & C64(0xFEFEFEFEFEFEFEFE);
+		        b |= (c << 17) & C64(0xFEFEFEFEFEFEFEFE);
+		        b |= (c >> 10) & C64(0x3F3F3F3F3F3F3F3F);
+		        b |= (c <<  6) & C64(0x3F3F3F3F3F3F3F3F);
+		        b |= (c >>  6) & C64(0xFCFCFCFCFCFCFCFC);
+		        b |= (c << 10) & C64(0xFCFCFCFCFCFCFCFC);
+		        return b;
+		}
+
+  void initializeMoveGen() {
+	  U64 x = 1L;
+	  for (int i=0; i < 64; i++) {
+		  knightMoveArray[i]=knightMoves(x);
+		  //kingMoveArray[i]=kingAttacks(x);
+
+		  //pawnCheckArray[0][i]=getWhitePawnCheckAttack(x);
+		  //pawnCheckArray[1][i]=getBlackPawnCheckAttack(x);
+		  x= x << 1;
+	  }
+  }
+
+  int getKnightNonCaptures(int cnt, int* moves, U64 knights, U64 target,  int fromType)
+  {
+
+	  if ( knights ) do {
+
+		  int victim=-1, orderValue, move;
+		  U64 attacks;
+		  victim=noVictim;
+
+		  orderValue=DEFAULT_SORT_VAL;
+		  int idx = bitScanForward(knights); // square index from 0..63
+		  attacks = knightMoveArray[idx] & target;
+
+		  while (attacks)  {
+			  int squareTo = bitScanForward(attacks);
+			  move = 0
+					  | (63-idx)	// from
+					  | ( (63-squareTo) << TO_SHIFT) // to
+					  | (fromType  << PIECE_SHIFT) // piece moving
+					  | (victim << CAPTURE_SHIFT) //piece captured
+					  | ( simple << TYPE_SHIFT) // move type
+					  | (orderValue << ORDERING_SHIFT); // ordering value
+			  moves[cnt++]=move;
+			  attacks = attacks & ( attacks - 1 );
+		  }
+	  }
+	  while (knights &= knights-1); // reset LS1B
+
+	  return cnt;
+  }
 
 int getPawnPushes(int cnt, int* moves, U64 pawns, U64 all, int side, int pieceMoving)
 {
