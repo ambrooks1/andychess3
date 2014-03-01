@@ -18,6 +18,7 @@
 #include "stdbool.h"
 #include "util.h"
 #include "movegen.h"
+#include "move.h"
 
 struct gameState {
 	int 			board[64];
@@ -268,15 +269,13 @@ void parseFen( char fen[]) {
 		}
  */
 
-int*  generateNonCaptures(int color ) {     // don't forget to free moves after using
-
-		int *moves = malloc(150 * sizeof *moves);
+int * generateNonCaptures(int color ) {     // don't forget to free moves after using
+		int * moves = (int *) calloc(150, sizeof(int));
 		int cnt=0;
 
 		U64 all= gs.bitboard[ALLPIECES];
 
 		cnt = getPawnPushes(cnt, moves, gs.bitboard[WP +gs.color], all, gs.color, WP+gs.color);
-
 		return moves;
 }
 
@@ -285,7 +284,16 @@ int main(void) {
 
 	  parseFen(fen);
 	  printBoard();
-	  displayBitboards();
-
+	 // displayBitboards();
+	  printf("gen non caps");
+	  int * moves = generateNonCaptures(gs.color);
+	  printf("finished gen non caps");
+	  int i=0;
+	  while (moves[i] != 0) {
+		 char *moveStr = moveToString(moves[i]);
+		 printf( "%s\n", moveStr);
+		 free(moveStr);
+		 i++;
+	  }
 	  return EXIT_SUCCESS;
 }
