@@ -34,7 +34,7 @@ typedef unsigned long long U64 ;
 #define ALLPIECES 14
 
 #define NUMBITBOARDS 15
-#define MAX_PLIES=200
+
 #define  MAX_PLIES 200
 
 #define  WKSIDE 0
@@ -46,7 +46,7 @@ typedef unsigned long long U64 ;
 #define   EP_CLEAR  0x1FFFFFF
 
 #define  QUEEN_COUNT_BONUS  20
-#define  KING_WALK_PENALTY-30
+#define  KING_WALK_PENALTY -30
 #define  WING_PAWN_PUSH_PENALTY  -25
 #define  ROOK_COUNT_BONUS  20
 #define  CASTLING_BONUS  30
@@ -83,7 +83,7 @@ typedef struct gameState {
 	bool      		seventhRankExtension;
     int 			moveHistory[MAX_PLIES];
 	int 			capturedPieces[MAX_PLIES];
-	int   			moveCounter=0;
+	int   			moveCounter;
 
 	U64 pieces[12][64] ;  	// [piece type][square]
 	U64 en_passant[64] ;   	 	// En passant

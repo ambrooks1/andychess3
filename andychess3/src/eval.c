@@ -5,6 +5,7 @@
  *      Author: andrewbrooks
  */
 #include "stdbool.h"
+#include "defs.h"
 
 const U64 kingsideMask[] =  { C64(67569408), C64(1978038598238208)}; // white, black
 
@@ -44,7 +45,7 @@ bool goodQueensideShield(U64 x, int color) {
 	}
 	return false;
 }
-const short queenTable[] =  {
+short queenTable[] =  {
 		//queen
 		-20,-10,-10, -5, -5,-10,-10,-20,
 		-10,  0,  0,  0,  0,  0,  0,-10,
@@ -58,7 +59,7 @@ const short queenTable[] =  {
 short blackQueenTable[64];
 
 
-const short whitePawnTable[] =
+short whitePawnTable[] =
 {
 		0,  0,  0,  0,  0,  0,  0,  0,
 		25, 25, 25, 25, 25, 25, 25, 25,
@@ -75,7 +76,7 @@ short blackPawnTable[64];
 
 //Knights are encouraged to control the center and stay away from edges to increase mobility:
 
-const short knightTable =
+short knightTable[] =
 {
 		-50,-40,-30,-30,-30,-30,-40,-50,
 		-40,-20,  0,  5,  5,  0,-20,-40,
@@ -93,9 +94,9 @@ short blackKnightTable[64];
 
 //Bishops are also encouraged to control the center and stay away from edges and corners:
 
-short knighttables[][]  = { knightTable, blackKnightTable};
 
-const short whiteBishopTable =
+
+short whiteBishopTable[] =
 {
 		-20,-10,-10,-10,-10,-10,-10,-20,
 		-10,  0,  0,  0,  0,  0,  0,-10,
@@ -109,9 +110,7 @@ const short whiteBishopTable =
 
 short  blackBishopTable[64];
 
-short bishoptables[][] = { whiteBishopTable, blackBishopTable};
-
-const short kingTableEndGame =
+short kingTableEndGame[] =
 {
 		-50,-40,-30,-20,-20,-30,-40,-50,
 		-20,-20,-10,  0,  0,-10,-20,-20,
@@ -123,11 +122,6 @@ const short kingTableEndGame =
 		-50,-40,-30,-20,-20,-30,-40,-50
 };
 
-
-short pieceTables[][] = {  whitePawnTable, blackPawnTable, knightTable, blackKnightTable,
-		whiteBishopTable, blackBishopTable};
-
-short queenPieceTables[][] = {  queenTable, blackQueenTable };
 
 void initializeEval() {
 
