@@ -27,6 +27,13 @@
 #define  fileG C64( 0x0202020202020202)
 #define  fileH C64( 0x0101010101010101)
 
+#define  PAWN 0
+#define  KNIGHT 1
+#define  BISHOP 2
+#define  ROOK 3
+#define  QUEEN 4
+#define  KING 5
+
 #define noVictim 0
 #define DEFAULT_SORT_VAL 62
 
@@ -42,11 +49,23 @@
 #define TYPE_MASK  31 // 5 bits
 #define ORDERING_CLEAR  0x1FFFFFF //  00000001111111111111111111111111 use with & which clears the ordering value
 
+#define ROOK_ATTACK 0
+#define BISHOP_ATTACK 1
 
 int getPawnPushes(int cnt, int* moves, U64 pawns, U64 all, int side, int pieceMoving);
 int getKnightNonCaptures(int cnt, int* moves, U64 knights, U64 target,  int fromType);
 int  getBishopNonCaptures(int cnt, int* moves, U64 bishops, U64  all, U64  target, int fromType);
 int  getRookNonCaptures(int cnt, int* moves, U64 rooks, U64  all, U64  target, int fromType);
+int  getQueenNonCaptures(int cnt, int* moves, U64 queens, U64  all, U64  target, int fromType);
+int getKingNonCaptures(int cnt, int* moves, U64 king, U64 target,  int fromType);
+
+int getPawnCapturesAndPromotions(int cnt, int* moves, U64 pawns, U64 all,
+				U64 enemy, int side, int pieceMoving, int flags, int* board) ;
+int getKnightCaptures(int cnt, int* moves, U64 knights, U64 target,  int fromType, int *board);
+int  getBishopCaptures(int cnt, int* moves, U64 bishops, U64  all, U64  target, int fromType, int* board);
+int  getRookCaptures(int cnt, int* moves, U64 rooks, U64  all, U64  target, int fromType, int* board);
+int  getQueenCaptures(int cnt, int* moves, U64 queens, U64  all, U64  target, int fromType, int *board);
+int getKingCaptures(int cnt, int* moves, U64 king, U64 target,  int fromType, int* board);
 
 void initializeMoveGen();
 

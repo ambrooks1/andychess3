@@ -78,7 +78,32 @@
 		move = (move & ORDERING_CLEAR); // Clear the ordering value
 		return (move | (value << ORDERING_SHIFT)); // Change the ordering value and return the new move integer
 	}
+//fromType, fromIndex, toIndex, capture, moveType, 0);
+	/**
+	 *  Creates a move integer from the gives values
+	 *
+	 *  @param pieceMoving
+	 *  @param fromIndex
+	 *  @param toIndex
+	 *  @param capture
+	 *  @param type
+	 *  @param ordering If we want to assign an ordering value at creation time, probably won't be used much for now
+	 *  @reutrn move The finished move integer
+	 */
+	 int createMove(int pieceMoving, int fromIndex, int toIndex, int capture, int type, int ordering)
+	{
+		//if (type > 16) System.out.println("AAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
 
+		int move = 0
+		    | fromIndex	// from
+			| (toIndex << TO_SHIFT) // to
+			| (pieceMoving  << PIECE_SHIFT) // piece moving
+			| (capture << CAPTURE_SHIFT) //piece captured
+			| (type << TYPE_SHIFT) // move type
+			| (ordering << ORDERING_SHIFT); // ordering value
+		return move;
+	}
+	// END createMove
 	/**
 	 * Gets the file of the given board[] index
 	 *

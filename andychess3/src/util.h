@@ -18,5 +18,6 @@ const char* getSquareFromIndex(int idx);
 U64 setBitLong(U64 x, int position);
 int setBit(int x, int position);
 int clearBit(int x, int position);
+U64 inBetweenWithoutLookup(int sq1, int sq2);
 
 #endif /* UTIL_H_ */

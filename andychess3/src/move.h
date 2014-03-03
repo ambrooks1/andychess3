@@ -32,5 +32,5 @@
 #define ORDERING_CLEAR  0x1FFFFFF //  00000001111111111111111111111111 use with & which clears the ordering value
 
 char *  moveToString(int move);
-
+int createMove(int pieceMoving, int fromIndex, int toIndex, int capture, int type, int ordering);
 #endif /* MOVE_H_ */

@@ -21,6 +21,32 @@ const int index64[64] = {
    25, 14, 19,  9, 13,  8,  7,  6
 };
 
+U64 inBetweenWithoutLookup(int sq1, int sq2)
+	{
+		//Gerd Isenberg
+		const U64 o = 1, m1 = -o;
+		const U64 a2a7 = C64(0x0001010101010100);
+		const U64 b7h1 = C64(0x0002040810204080);
+		const U64 b2h8 = C64(0x8040201008040200);
+	    U64 btwnbits, raybits;
+	    int rankDiff, fileDiff, antiDiff, diaxDiff;
+
+	    btwnbits  = (o<<sq1) -  o;
+	    btwnbits ^= (o<<sq2) -  o;
+	    rankDiff  =((sq2 |7) -  sq1)>>3;
+	    fileDiff  = (sq2 &7) - (sq1 &7);
+	    antiDiff  = rankDiff + fileDiff;
+	    rankDiff  = rankDiff &  15;
+	    fileDiff  = fileDiff &  15;
+	    antiDiff  = antiDiff &  15;
+	    diaxDiff  = rankDiff ^ fileDiff;
+	    raybits   =((rankDiff-1)>>26)*2;
+	    raybits  |= (m1+fileDiff)& a2a7;
+	    raybits  |= (m1+antiDiff)& b7h1;
+	    raybits  |= (m1+diaxDiff)& b2h8;
+	    raybits  *= btwnbits &-btwnbits;
+	    return      raybits  & btwnbits;
+	}
 /**
  * bitScanForward
  * @author Martin LŠuter (1997)
