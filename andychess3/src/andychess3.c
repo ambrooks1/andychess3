@@ -20,7 +20,7 @@
 #include "move.h"
 #include "magic.h"
 #include "eval.h"
-#include "minunit.h"
+
 #include "andychess3.h"
 
 const U64 XYA =  C64(6);
@@ -65,7 +65,7 @@ extern U64 pawnCheckArray[2][64];    //white, black
 
 gameState gs;
 
-
+void printMove(int move);
 
 //**********************************************************************
 void initializeFlags() {
@@ -219,6 +219,9 @@ void convertRowsToBoard(char* rows[8]) {
 
 void parseFen( char fen[]) {
 
+	gs.positional[WHITE]=0;
+	gs.positional[BLACK]=0;
+
 	char *cp = strdup(fen);
 	char *ch, *ch2;
 
@@ -301,11 +304,16 @@ void parseFen( char fen[]) {
 
 	for (int i = 0; i < 6; i++)  {
 		if (i % 2 == 0) {
-			gs.positional[WHITE] += addPositionalValueForType( i);
+			int whitePos = addPositionalValueForType( i);
+			printf("whitepos %d\n", whitePos);
+			gs.positional[WHITE] += whitePos;
 		}
 		else {
-			gs.positional[BLACK] += addPositionalValueForType( i);
+			int blackPos = addPositionalValueForType( i);
+			printf("blackPos %d\n", blackPos);
+			gs.positional[BLACK] += blackPos;
 		}
+		printf("whitepositional %d blackpositional %d\n", gs.positional[WHITE], gs.positional[BLACK]);
 	}
 
 	printf("Doing calc hash\n");
@@ -430,9 +438,7 @@ void printMoves(int *moves) {
 
 	int i=0;
 	while (moves[i] != 0) {
-		char *moveStr = moveToString(moves[i]);
-		printf( "%s\n", moveStr);
-		free(moveStr);
+		printMove(moves[i]);
 		i++;
 	}
 }
@@ -1051,9 +1057,15 @@ bool isMoveLegal ( int move) {
 		squares = getInBetweenSquares(from,to);
 		if (squares != 0) {
 			int i=0;
-			while (squares)
+			while (squares[i])
 			{
-				if (gs.board[squares[i]] != EMPTY) return false;
+				if (gs.board[squares[i]] != EMPTY) {
+					//int xx = squares[i];
+					//int qq = gs.board[squares[i]];
+					//char c = reverseConvertPiece(qq);
+					//printf("square %d OCCUPADO PARA %c \n",xx, c);
+					return false;
+				}
 				i++;
 			}
 			free(squares);
@@ -1065,46 +1077,46 @@ bool isMoveLegal ( int move) {
 	int epSquare2;
 	switch(moveType2) {
 	case (simple) :
-			 				if (gs.board[to] != EMPTY) return false;
+			 if (gs.board[to] != EMPTY) return false;
 	break;
 
 	case(singlePawnMove) :
-			 				if (gs.board[to] != EMPTY) return false;
+			 if (gs.board[to] != EMPTY) return false;
 	break;
 
 	case(doublePawnMove) :
 
-			 	    		 if (gs.board[to+ offset[color2]] != EMPTY) return false;
+			  if (gs.board[to+ offset[color2]] != EMPTY) return false;
 	if (gs.board[to] != EMPTY) return false;
 	break;
 
 	case (kcastle)  :
 
-			 				if (! (canCastle( kingside[color2], gs.bitboard[ALLPIECES])  ))  return false;
+			if (! (canCastle( kingside[color2], gs.bitboard[ALLPIECES])  ))  return false;
 	break;
 
 	case (qcastle)  :
 
-		 					if (! (canCastle( queenside[color2], gs.bitboard[ALLPIECES])  ))  return false;
+		 	if (! (canCastle( queenside[color2], gs.bitboard[ALLPIECES])  ))  return false;
 	break;
 
 	case(simplePromotionQueen) :
-			 				if (gs.board[to] != EMPTY) return false;
+			if (gs.board[to] != EMPTY) return false;
 	break;
 
 	case(captureNoPromotion) :
-			 				if (victim < 0 || victim > 9) return false;
+			if (victim < 0 || victim > 9) return false;
 	if (gs.board[to] != victim) return false;
 	break;
 
 	case ( capturePromotionQueen) :
-			 				if (victim < 0 || victim > 9) return false;
+			 						if (victim < 0 || victim > 9) return false;
 	if (gs.board[to] != victim) return false;
 	break;
 
 	case ( epCapture) :
 
-			 				 epSquare2 = from + offset[color2];
+		epSquare2 = from + offset[color2];
 	if (gs.board[epSquare2] != victim) return false;
 	break;
 	default: return false;   //weird movetype
@@ -1121,25 +1133,42 @@ void initializeAll() {
 	initializeZobrist();
 }
 
+void printMove(int move) {
+	char *moveStr = moveToString(move);
+	printf( "%s\n", moveStr);
+	free(moveStr);
+}
 static char *eval_test() {
 	printf("Running eval_test\n");
 	char fen[] = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 	parseFen(fen);
+	assert(gs.material[0]==gs.material[1]);
+	assert(gs.material[0]==4165);
+	printf(" material white %d material black %d\n", gs.material[0],gs.material[1]);
+	printf(" positional white %d positional black %d\n", gs.positional[0],gs.positional[1]);
+
 	int eval = getEvaluation(gs);
 	printf("evaluation= %d\n", eval);
-	mu_assert("error, opening board should have zero eval", eval==0);
+	assert( eval==0);
 	return 0;
 }
 static char*  isLegal_test() {
 	printf("Running isLegal_test\n");
-	char fen[] = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R2qKb1R w KQkq - 0 1";
+	char fen[] = "rn1qkbnr/ppp2pp1/3p4/4p2p/4P2P/3P3b/PPP2PP1/RNBQKBNR w KQkq - 0 1";
 	parseFen(fen);
 	int * moves = generateNonCaptures(gs.color);
 	int *ptr=moves;
 
 	while (*ptr) {
 		int move = *ptr;
-		mu_assert("error, board not same after make/unmake", isMoveLegal(move));
+		printf("Testing move ");
+		printMove(move);
+		if (!isMoveLegal(move)) {
+			printf("Not legal ");
+			printMove(move);
+			isMoveLegal(move);
+		}
+		assert( isMoveLegal(move));
 		ptr++;
 	}
 	return 0;
@@ -1150,8 +1179,8 @@ static  char * check_test() {
 	//black king is in check from white bishop
 	parseFen(fen);
 
-	mu_assert("isInCheck failed", isInCheck(BLACK));
-	mu_assert("isInCheck failed", !isInCheck(WHITE));
+	assert( isInCheck(BLACK));
+	assert( !isInCheck(WHITE));
 	return 0;
 }
 static  char *  make_test() {
@@ -1177,10 +1206,10 @@ static  char *  make_test() {
 		unmake(move, flags, hash2);
 
 		int comp_val=memcmp(saveBoard, gs.board,  64*sizeof(int));
-		mu_assert("error, board not same after make/unmake", comp_val==0);
+		assert(comp_val==0);
 
 		comp_val=memcmp(saveBitboards, gs.bitboard,  NUMBITBOARDS*sizeof(U64));
-		mu_assert("error, bitboard not same after make/unmake", comp_val==0);
+		assert( comp_val==0);
 
 		// TODO : compare material positional color flags and hash
 		ptr++;
