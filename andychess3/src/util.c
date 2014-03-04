@@ -6,9 +6,19 @@
  *      Author: andrewbrooks
  */
 
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
 #include "defs.h"
 #include "assert.h"
-#include <string.h>
+
+const U64 bitmap1 = C64(0x8080808080808080);
+const U64 bitmap2 = C64(0x0101010101010101);
+
+U64 inBetweenWithoutLookup(int sq1, int sq2);
+int bitScanForward(U64 bb) ;
+U64 nortFill(U64 gen) ;
+U64 soutFill(U64 gen) ;
 
 int popCount (U64 x) {
    int count = 0;
@@ -29,6 +39,26 @@ const int index64[64] = {
    46, 26, 40, 15, 34, 20, 31, 10,
    25, 14, 19,  9, 13,  8,  7,  6
 };
+
+int* getInBetweenSquares(int from, int to) {
+			//get the indices of squares between and not including from and to
+			int k=0, idx2;
+
+			int * out = (int *) calloc(8, sizeof(int));
+
+			U64 inBetweenSquares = inBetweenWithoutLookup(from, to);
+
+			while (inBetweenSquares){
+				    idx2 =bitScanForward(inBetweenSquares);
+					//System.out.println("rook in between idx " + idx);
+				    out[k++]=idx2;
+					inBetweenSquares = inBetweenSquares & ( inBetweenSquares - 1 );
+			}
+			if (k > 0) {
+				return out;
+			}
+			return 0;
+		}
 
 U64 inBetweenWithoutLookup(int sq1, int sq2)
 	{
@@ -147,3 +177,104 @@ U64 setBitLong(U64 x, int position)
 	U64 mask = C64(1) << position;
 	return x | mask;
 }
+	static U64 soutOne (U64 b) {return  b >> 8;}
+	static U64 nortOne (U64 b) {return  b << 8;}
+
+	static U64 wFrontSpans(U64 wpawns) {return nortOne (nortFill(wpawns));}
+	//U64 bRearSpans (U64 bpawns) {return nortOne (nortFill(bpawns));}
+	static U64 bFrontSpans(U64 bpawns) {return soutOne (soutFill(bpawns));}
+	//U64 wRearSpans (U64 wpawns) {return soutOne (soutFill(wpawns));}
+
+	// pawns with at least one pawn in front on the same file
+	//U64 wPawnsBehindOwn(U64 wpawns) {return wpawns & wRearSpans(wpawns);}
+
+	// pawns with at least one pawn behind on the same file
+	static U64 wPawnsInfrontOwn (U64 wpawns)
+	{
+		return wpawns & wFrontSpans(wpawns);
+
+	}
+	static U64 bPawnsInfrontOwn (U64 bpawns)
+	{
+		return bpawns & bFrontSpans(bpawns);
+
+	}
+	 int doubledPawnsWhite(U64 pawns) {
+		return popCount(wPawnsInfrontOwn(pawns));
+	}
+	 int doubledPawnsBlack(U64 pawns) {
+		return popCount(bPawnsInfrontOwn(pawns));
+	}
+	 int isolatedPawnsWhite(U64 whitePawns, U64 blackPawns)
+	{
+		U64 c = ((whitePawns & ~bitmap2 ) << 7);   //capture
+		U64 d = ((whitePawns & ~bitmap1)  << 9 );  //capture
+
+		U64 pawnAttacksWhite   = c | d;
+		return popCount(whitePawns & ~ soutFill(nortFill(pawnAttacksWhite)));
+	}
+
+	 int isolatedPawnsBlack(U64 whitePawns, U64 blackPawns)
+	{
+		U64 c = ((blackPawns & ~bitmap1) >> 7 );
+		U64 d = ((blackPawns & ~bitmap2) >> 9 );
+		U64 pawnAttacksBlack = c | d;
+
+		return popCount(blackPawns & ~ soutFill(nortFill(pawnAttacksBlack)));
+	}
+
+	 U64 passedPawnsWhite(U64 whitePawns, U64 blackPawns) {
+		U64 c = ((blackPawns & ~bitmap1) >> 7 );
+		U64 d = ((blackPawns & ~bitmap2) >> 9 );
+		U64 pawnAttacksBlack = c | d;
+
+		U64 blackdown  = soutFill(blackPawns | pawnAttacksBlack);
+		U64 whitePassers = whitePawns & ~blackdown;
+		return whitePassers;
+		//return popCount(whitePassers);
+	}
+
+	 U64 passedPawnsBlack(U64 whitePawns, U64 blackPawns) {
+		U64 c = ((whitePawns & ~0x0101010101010101L ) << 7);   //capture
+		U64 d = ((whitePawns & ~bitmap2)  << 9 );  //capture
+
+		U64 pawnAttacksWhite   = c | d;
+
+		U64 whiteup  = nortFill(whitePawns | pawnAttacksWhite);
+		U64 blackPassers = blackPawns & ~whiteup;
+		return blackPassers;
+		//return popCount(blackPassers);
+
+	}
+
+	//http://chessprogramming.wikispaces.com/Pawn+Fills#FileFill
+	 U64 nortFill(U64 gen) {
+		gen |= (gen <<  8);
+		gen |= (gen << 16);
+		gen |= (gen << 32);
+		return gen;
+	}
+
+	 U64 soutFill(U64 gen) {
+		gen |= (gen >>  8);
+		gen |= (gen >> 16);
+		gen |= (gen >> 32);
+		return gen;
+	}
+	 U64  fileFill(U64 gen) {
+		   return nortFill(gen) | soutFill(gen);
+	}
+
+	 U64 openFiles(U64 wpawns, U64 bpawns) {
+		   return ~fileFill(wpawns | bpawns);
+	}
+	 U64 halfOpenOrOpenFile(U64 gen) {return ~fileFill(gen);}
+
+	 U64 wHalfOpenFile(U64 wpawns, U64 bpawns) {
+		   return halfOpenOrOpenFile(wpawns)
+		        ^ openFiles(wpawns, bpawns);
+	}
+	 U64 bHalfOpenFile(U64 wpawns, U64 bpawns) {
+		   return halfOpenOrOpenFile(bpawns)
+		        ^ openFiles(wpawns, bpawns);
+	}

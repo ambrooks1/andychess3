@@ -66,7 +66,17 @@ typedef unsigned long long U64 ;
 #define  KNIGHT_VALUE  325
 #define  PAWN_VALUE  100
 
+#define PAWN_STRUC_TBL_ENTRIES 500000
 
+typedef  struct pawnStructureTable {
+
+	 U64 pawnHash;
+	 U64 whitePawns;
+	 U64  blackPawns;
+	 int whiteScore;
+	 int blackScore;
+
+} pawnStructureTable;
 
 typedef struct gameState {
 	int 			board[64];

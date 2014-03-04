@@ -20,5 +20,8 @@ int setBit(int x, int position);
 int clearBit(int x, int position);
 U64 inBetweenWithoutLookup(int sq1, int sq2);
 int popCount (U64 x);
+int* getInBetweenSquares(int from, int to);
+U64 passedPawnsWhite(U64 whitePawns, U64 blackPawns) ;
+U64 passedPawnsBlack(U64 whitePawns, U64 blackPawns) ;
 
 #endif /* UTIL_H_ */

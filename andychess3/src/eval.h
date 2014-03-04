@@ -18,5 +18,6 @@ short whiteBishopTable[64];
 short  blackBishopTable[64];
 
 void initializeEval();
+int getEvaluation(gameState gs);
 
 #endif /* EVAL_H_ */
