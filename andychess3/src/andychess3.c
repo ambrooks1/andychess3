@@ -21,6 +21,7 @@
 #include "move.h"
 #include "magic.h"
 #include "eval.h"
+#include "minunit.h"
 
 const U64 XYA =  C64(6);
 const U64 XYB =  C64(112);
@@ -55,6 +56,8 @@ const int pawn[]={WP, BP};
 const int lowerBound[] = {8, 48};
 const int upperBound[] = { 15, 55};
 const int offset2[]={8, -8};
+const U64 fook[] = { C64(1) ^ C64(4),  C64(72057594037927936) ^ C64(288230376151711744)};
+const U64 fook2[] = { C64(128) ^ C64(16),  C64(-9223372036854775808) ^ C64(1152921504606846976)};
 
 gameState gs;
 
@@ -326,7 +329,7 @@ int materialValue(int color) {      // only used for initializing a state  , not
 int getMaterialValue() {    //just used for testing
 	return materialValue(gs.color) - materialValue(1-gs.color);
 }
-bool canCastle(int index, long allPieces) {
+bool canCastle(int index, U64 allPieces) {
 	/*To check whether castling is legal, we have to check whether
 			the squares between the King and the Rook in question, are empty.
 			This is easily done by just ANDing a pre- computed
@@ -337,7 +340,7 @@ bool canCastle(int index, long allPieces) {
 
 	if  (!( ( ( gs.flags >> index ) & 1 ) != 0 )) //bit is not set
 		return false;
-	long x = castlingBitboards[index] & allPieces;
+	U64 x = castlingBitboards[index] & allPieces;
 	if ( x == 0) return true;
 	return false;
 }
@@ -470,7 +473,26 @@ int getPSTValue(int pieceMoving, int to, int from) {
 			}
 	return 0;
 }
+int reversePSTValue(int pieceMoving, int to, int from) {
+
+	switch (pieceMoving) {
+			case WP:
+				return  whitePawnTable[from]  -  whitePawnTable[to] ;
+			case BP:
+				return blackPawnTable[from]  -  blackPawnTable[to] ;
+			case WN:
+				return knightTable[from]  -  knightTable[to] ;
+			case BN:
+				return blackKnightTable[from]  -  blackKnightTable[to] ;
+			case WB:
+				return whiteBishopTable[from]  -  whiteBishopTable[to] ;
+			case BB:
+				return blackBishopTable[from]  -  blackBishopTable[to] ;
+			}
+	return 0;
+}
 void make(int move) {
+	assert ( move != 0);
 
 	int oldCsState[2];
 	int newCsState[2];
@@ -482,16 +504,14 @@ void make(int move) {
 	gs.promotion=false;
 	gs.moveHistory[gs.moveCounter]= move;
 	gs.capturedPieces[gs.moveCounter]= -1;
-
-
 	int to = ((move >> TO_SHIFT) & SQUARE_MASK);
 	int from = move & SQUARE_MASK;
 	int myPieceMoving = (move >> PIECE_SHIFT) & PIECE_MASK;
 	//int type = (move >> TYPE_SHIFT) & TYPE_MASK;
 
-	long fromBB    =   1L <<   ( 63 - from);
-	long  toBB     =   1L <<   ( 63 - to);
-	long fromToBB = fromBB ^ toBB;
+	U64 fromBB    =   1L <<   ( 63 - from);
+	U64  toBB     =   1L <<   ( 63 - to);
+	U64 fromToBB = fromBB ^ toBB;
 
 	gs.board[from] = EMPTY;
 
@@ -505,6 +525,7 @@ void make(int move) {
 	resetCastling[1]=false;
 	int victim;
 	int theMoveType = moveType(move);
+	assert(theMoveType >= 1 && theMoveType <=9);
 
 	if (theMoveType != doublePawnMove) {
 		if (oldEPSquare != 0) {
@@ -522,18 +543,13 @@ void make(int move) {
 		gs.flags = (gs.flags | (newEPSquare << EP_SHIFT)); // Change the value and return the new irrev state integer
 		resetEP=true;
 	}
-
-
-	int promPiece, newto, otherPieces;
+	int promPiece, newto, otherPieces, posValue;;
 
 	switch(theMoveType) {
 
 	case singlePawnMove:
-
 		if ( to >= lowerBound[gs.color] && to <= upperBound[gs.color])
 			gs.seventhRankExtension=true;
-
-		int posValue;
 
 		posValue =  getPSTValue(myPieceMoving, to, from);
 		gs.positional[gs.color] +=posValue;
@@ -565,14 +581,10 @@ void make(int move) {
 		break;
 
 	case kcastle:
-
-
 		gs.positional[gs.color] += CASTLING_BONUS;
 		gs.board[to] =  myPieceMoving;
-
 		int rookFrom  = ksFromRook[gs.color];
 		int rookTo   =  ksToRook[gs.color];
-
 		gs.board[rookFrom] =  EMPTY;
 		gs.board[rookTo] =  castleRook[gs.color];
 
@@ -581,7 +593,7 @@ void make(int move) {
 		gs.bitboard[movingPieces]                       ^=  fromToBB;   // update white or black color bitboard
 		gs.bitboard[ALLPIECES]                      ^=  fromToBB;   // update occupied ...
 
-		long rookFromToBB = ksRookFrom[gs.color] ^ ksRookTo[gs.color];
+		U64 rookFromToBB = ksRookFrom[gs.color] ^ ksRookTo[gs.color];
 
 		int theRook = castleRook[gs.color];
 
@@ -591,14 +603,11 @@ void make(int move) {
 
 		gs.hash=  gs.hash ^  gs.pieces[myPieceMoving][from];
 		gs.hash=  gs.hash ^  gs.pieces[myPieceMoving][to];
-
 		gs.hash=  gs.hash ^  gs.pieces[theRook][rookFrom];
 		gs.hash=  gs.hash ^  gs.pieces[theRook][rookTo];
 		break;
 
 	case qcastle:
-
-
 		gs.positional[gs.color] += CASTLING_BONUS;
 		gs.board[to] =  myPieceMoving;
 
@@ -619,24 +628,18 @@ void make(int move) {
 		gs.bitboard[theRook]  ^=  rookFromToBB;
 		gs.bitboard[12+gs.color]  ^=  rookFromToBB;
 		gs.bitboard[ALLPIECES] ^=  rookFromToBB;   // update occupied ...
-
 		gs.flags = gs.flags & kingSideFlags[gs.color];
 		gs.flags = gs.flags & queenSideFlags[gs.color];
 
 		gs.hash=  gs.hash ^  gs.pieces[myPieceMoving][from];
 		gs.hash=  gs.hash ^  gs.pieces[myPieceMoving][to];
-
 		gs.hash=  gs.hash ^  gs.pieces[theRook][rookFrom];
 		gs.hash=  gs.hash ^  gs.pieces[theRook][rookTo];
 		break;
 
-
 	case captureNoPromotion:
-
 		victim = (move >> CAPTURE_SHIFT) & PIECE_MASK ;
-
 		gs.capturedPieces[gs.moveCounter]= victim;
-
 		int posVal;
 		if (myPieceMoving < 6 ) {
 			posVal =  getPSTValue(myPieceMoving, to, from);
@@ -682,11 +685,7 @@ void make(int move) {
 		gs.bitboard[movingPieces]  |=  toBB;       // set bit of mypieces
 
 		gs.bitboard[ALLPIECES] =   gs.bitboard[WHITEPIECES] |  gs.bitboard[BLACKPIECES];
-
-
 		if (victim < 6 )  gs.positional[1-gs.color] -= getPSTValue2(victim,to);
-
-
 		gs.hash=  gs.hash ^  gs.pieces[myPieceMoving][from];
 		gs.hash=  gs.hash ^  gs.pieces[promPiece][to];
 		gs.hash=  gs.hash ^  gs.pieces[victim][to];
@@ -697,7 +696,6 @@ void make(int move) {
 		break;
 
 	case simplePromotionQueen:
-
 		gs.positional[gs.color] -=50;
 
 		promPiece=pp[gs.color];
@@ -719,26 +717,17 @@ void make(int move) {
 		break;
 
 	case epCapture:
-
-
 		otherPieces=12 + (1-gs.color);
 		newto= to + offset2[gs.color];
-
 		gs.board[newto]= EMPTY;
 		gs.board[to] =  myPieceMoving;
-
 		victim = (move >> CAPTURE_SHIFT) & PIECE_MASK ;
-
 		gs.positional[1-gs.color] -= getPSTValue2(victim,newto);
-
 		gs.capturedPieces[gs.moveCounter]= victim;
-
 		posVal =  getPSTValue(myPieceMoving, to, from);
-
 		gs.positional[gs.color] +=posVal;
 		int idx = 63 -  newto;
-		long z = ~(1L << idx);
-
+		U64 z = ~(1L << idx);
 		gs.bitboard[myPieceMoving]  			   ^=  fromToBB;
 		gs.bitboard[movingPieces]                ^=  fromToBB;   // update white or black color bitboard
 
@@ -795,17 +784,178 @@ void make(int move) {
 
 	}
 	if (gs.color==BLACK) gs.hash = gs.hash ^  gs.side;
-
-
 	gs.color=1-gs.color;
 }
+ void unmake(int move, int flags2, U64 hash2) {
+			 int to = ((move >> TO_SHIFT) & SQUARE_MASK);
+			 int from = move & SQUARE_MASK;
+			 int myPieceMoving = (move >> PIECE_SHIFT) & PIECE_MASK;
+			 int type = (move >> TYPE_SHIFT) & TYPE_MASK;
+
+			 U64 fromBB    =   1L <<   (63 -from);
+			 U64  toBB     =   1L <<   ( 63 - to);
+			 U64 fromToBB = fromBB ^ toBB;
+			 gs.moveCounter--;
+
+			 gs.board[from] =  myPieceMoving;
+			 int color2=myPieceMoving %2;
+			 int posValue, victim, promotionPiece, newto;
+			 gs.flags=flags2;
+			 switch(type) {
+
+			 case singlePawnMove:
+			 case simple:
+		     case doublePawnMove:
+		    	 gs.board[to] = EMPTY;
+
+		    	 gs.bitboard[myPieceMoving]  		   ^=  fromToBB;         //put the moving piece back
+		    	 gs.bitboard[12+color2]                ^=  fromToBB;   // update white or black color bitboard
+		    	 gs.bitboard[ALLPIECES]               ^=  fromToBB;   // update occupied ...
+
+				 if (myPieceMoving < 6 ) {
+					 posValue =  reversePSTValue(myPieceMoving, to, from);
+				   gs.positional[color2] +=posValue;
+				 }
+				 break;
+				case kcastle:
+			 		gs.positional[color2] -= CASTLING_BONUS;
+			 		gs.board[to] = EMPTY;
+			 		gs.board[ksToRook[color2]] = EMPTY;
+			 		gs.board[ksFromRook[color2]] =  WR+color2;
+
+			 		gs.bitboard[myPieceMoving]  ^=  fromToBB;         //put the moving piece back
+			 		gs.bitboard[WHITEPIECES+color2]                    ^=  fromToBB;   // update white or black color bitboard
+			 		gs.bitboard[ALLPIECES]                      ^=  fromToBB;   // update occupied ...
+
+					U64 rookFromToBB = fook[color2];
+					gs.bitboard[WR+color2]  ^=  rookFromToBB;
+					gs.bitboard[WHITEPIECES+color2]  ^=  rookFromToBB;
+					gs.bitboard[ALLPIECES]    ^=  rookFromToBB;   // update occupied ...
+				 break;
+				case qcastle:
+			 		gs.positional[color2] -= CASTLING_BONUS;
+			 		gs.board[to] = EMPTY;
+			 		gs.board[qsToRook[color2]] = EMPTY;
+			 		gs.board[qsFromRook[color2]] =  WR+color2;
+			 		gs.bitboard[myPieceMoving]  ^=  fromToBB;         //put the moving piece back
+			 		gs.bitboard[WHITEPIECES+color2]                    ^=  fromToBB;   // update white or black color bitboard
+			 		gs.bitboard[ALLPIECES]                      ^=  fromToBB;   // update occupied ...
+					rookFromToBB = fook2[color2];
+					gs.bitboard[WR+color2]  ^=  rookFromToBB;
+					gs.bitboard[WHITEPIECES+color2]  ^=  rookFromToBB;
+					gs.bitboard[ALLPIECES]    ^=  rookFromToBB;   // update occupied ...
+				 break;
+
+				case captureNoPromotion:
+					 victim = capture(move);
+					 gs.bitboard[myPieceMoving]  ^=  fromToBB;         //put the moving piece back
+					 victim = capture(move);  // ie; WP or WQ or BP, etc.
+					 gs.bitboard[victim] ^=  toBB;       // flip bit of the captured piece
+					 gs.board[to] =  victim;
+					 int value = valueMap[victim];
+					 gs.bitboard[12+color2]  ^=  fromToBB;         //put the moving piece back
+					 gs.bitboard[12 + (1-color2)] ^=  toBB;
+					 gs.bitboard[ALLPIECES] = gs.bitboard[BLACKPIECES] | gs.bitboard[WHITEPIECES];
+					 if (myPieceMoving < 6 ) {
+						 posValue =  reversePSTValue(myPieceMoving, to, from);
+						 gs.positional[color2] +=posValue;
+					 }
+
+					 if (victim < 6 )  gs.positional[1-color2] += getPSTValue2(victim,to);
+					 gs.material[1-color2]   += value;
+					 break;
+
+				case capturePromotionQueen:
+					 promotionPiece=gs.board[to];
+					 gs.bitboard[myPieceMoving]  ^=  fromToBB;         //put the moving piece back
+					 gs.bitboard[12+color2]  ^=  fromToBB;
+
+					 gs.bitboard[myPieceMoving]  ^=  toBB;
+					 gs.bitboard[12+color2]  ^=  toBB;
+
+					 victim = capture(move);  // ie; WP or WQ or BP, etc.
+					 gs.bitboard[victim] ^=  toBB;       // toggle bit of the captured piece
+					 gs.bitboard[12+(1-color2)] ^=  toBB;       // toggle bit of the captured piece
+
+					 gs.board[to] = victim;
+					 value = valueMap[victim];
+
+					 U64 notToBB = ~toBB;
+					 gs.bitboard[promotionPiece] &= notToBB;    //clear bit
+					 gs.bitboard[12+color2]   &= notToBB;    //clear bit
+
+					 gs.positional[color2] += 50;
+					 if (victim < 6) gs.positional[1-color2] += getPSTValue2(victim,to);
+
+					 gs.bitboard[ALLPIECES] = gs.bitboard[BLACKPIECES] | gs.bitboard[WHITEPIECES];
+					 gs.material[1-color2] += value;
+					 gs.material[color2] -=  ( QUEEN_VALUE-PAWN_VALUE);
+				break;
+
+				 case simplePromotionQueen:
+					 promotionPiece=gs.board[to];
+					 gs.board[to] = EMPTY;
+
+					 notToBB = ~toBB;
+
+					 gs.bitboard[myPieceMoving]    |=    fromBB;     //put the moving piece back
+					 gs.bitboard[12+color2]      |=    fromBB;
+					 gs.bitboard[myPieceMoving]    &=    notToBB;
+					 gs.bitboard[12+color2]      &=    notToBB;
+					 gs.bitboard[promotionPiece] &=    notToBB;    //clear bit
+					 gs.bitboard[12+color2]      &=    notToBB;
+					 gs.bitboard[ALLPIECES] = gs.bitboard[BLACKPIECES] | gs.bitboard[WHITEPIECES];
+					 gs. material[color2] -=  ( QUEEN_VALUE-PAWN_VALUE);
+
+					 gs.positional[color2] +=50;
+					break;
+
+				case epCapture:
+			 		newto= to + offset2[color2];
+			 		gs.board[to] = EMPTY;
+					int idx;
+					gs.bitboard[myPieceMoving]  ^=  fromToBB;
+					gs.bitboard[12+color2]  ^=  fromToBB;
+
+					if (myPieceMoving==WP)  {
+						gs.board[to+8] = BP;
+						idx = 63 -  (to + 8 );
+						U64 z = 1L << idx;
+						gs.bitboard[BP]  |=  z;
+						gs.bitboard[BLACKPIECES]  |=  z;
+						gs.positional[BLACK] += getPSTValue2(BP,newto);
+						gs.material[BLACK]   += PAWN_VALUE;
+					}
+					else {
+						gs.board[to-8] = WP;
+
+						idx = 63 -  (to  - 8);
+						U64 z = 1L << idx;
+						gs.bitboard[WP] |= z;
+						gs.bitboard[WHITEPIECES]  |=  z;
+						gs.positional[WHITE] += getPSTValue2(WP,newto);
+						gs.material[WHITE]   += PAWN_VALUE;
+					}
+					 int  posVal =  reversePSTValue(myPieceMoving, to, from);
+
+					 gs.positional[color2] +=posVal;
+					 gs.bitboard[ALLPIECES] = gs.bitboard[BLACKPIECES] | gs.bitboard[WHITEPIECES];
+
+					break;
+			 }
+			 gs.color=1-gs.color;
+
+			 gs.hash=hash2;
+			 gs.currentPly--;
+		 }
+
 int  getPositionalValue(int i, int piece) {
 
 	return getPSTValue2(piece,i);
 }
 
 int addPositionalValueForType ( int piece) {
-	long x = gs.bitboard[piece];
+	U64 x = gs.bitboard[piece];
 	int total=0;
 
 	while (x)
@@ -853,6 +1003,39 @@ void initializeAll() {
 	initializeFlags();
 	initializeZobrist();
 }
+ static char *  make_test() {
+
+	 char fen[] = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R2qKb1R w KQkq - 0 1";
+	 parseFen(fen);
+	 int * moves = generateNonCaptures(gs.color);
+	 int *ptr=moves;
+
+	 int saveBoard[64];
+	 memcpy(saveBoard, gs.board, sizeof(gs.board));
+
+	 U64 saveBitboards[NUMBITBOARDS];
+	 memcpy(saveBitboards, gs.bitboard, sizeof(gs.bitboard));
+
+	 int flags = gs.flags;
+	 U64 hash2 = gs.hash;
+
+	 while (*ptr) {
+		 int move = *ptr;
+		 printf("doing make/unmake on move  %s\n",  moveToString(move));
+		 make(move);
+		 unmake(move, flags, hash2);
+
+		 int comp_val=memcmp(saveBoard, gs.board,  64*sizeof(int));
+		 mu_assert("error, board not same after make/unmake", comp_val==0);
+
+		 comp_val=memcmp(saveBitboards, gs.bitboard,  NUMBITBOARDS*sizeof(U64));
+		 mu_assert("error, bitboard not same after make/unmake", comp_val==0);
+
+		 // TODO : compare material positional color flags and hash
+		 ptr++;
+	 }
+	  return 0;
+ }
 int main(void) {
 
 	initializeAll();
@@ -864,6 +1047,8 @@ int main(void) {
 	parseFen(fen);
 	printBoard();
 	// displayBitboards();
+
+	make_test();
 
 	printf("gen non caps\n");
 	int * moves = generateNonCaptures(gs.color);

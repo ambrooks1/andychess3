@@ -91,5 +91,7 @@ typedef struct gameState {
 	U64  W_CASTLING_RIGHTS[4];   // both ways, short, long and none  0,1,2,3
 	U64  B_CASTLING_RIGHTS[4];   // both ways, short, long and none
 
+    int currentPly;
+
 } gameState;
 #endif /* DEFS_H_ */
