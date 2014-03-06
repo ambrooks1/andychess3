@@ -22,6 +22,8 @@
 #include "TranspositionTable.h"
 #include "eval.h"
 #include "movegen.h"
+#include "util.h"
+
 
 int  nextTimeCheck = TIME_CHECK_INTERVAL;
 int movesPerSession=0;   //default
@@ -61,7 +63,7 @@ turnNullOn,deltaPruneOn,positionalEvalOn,orderByHistory,
 orderByKillers,turnSEEOn;
 
 bool foundMove=false;
-bool debug=false;
+bool search_debug=false;
 bool usingTime=false;
 
 void clearHistory() {
@@ -127,6 +129,23 @@ char *calcBestMove(gameState state, int depthLevel2) {
 	return moveToString(move);
 }
 
+void sort_by_value(MoveInfo arr[], int size) {
+    // note the size-1.  The last one will be in order
+    for (int i = 0; i < size-1; i++) {
+        int min = i;
+        for (int j = i+1; j < size; j++) {
+            if (arr[j].value < arr[min].value) {
+                min = j;
+            }
+        }
+        if (min != i) { // if you're not changing position, don't swap
+            MoveInfo temp = arr[i];
+            arr[i] = arr[min];
+            arr[min] = temp;
+        }
+    }
+}
+
 MoveInfo* makeMoveInfo(int* movelist, int cntMoves) {
 
 	MoveInfo * mi = (MoveInfo *) calloc(cntMoves, sizeof(MoveInfo));
@@ -136,16 +155,28 @@ MoveInfo* makeMoveInfo(int* movelist, int cntMoves) {
 	}
 	return mi;
 }
-int compare(MoveInfo *elem1, MoveInfo *elem2)
+/*int compare(const void *v1, const void *v2)
 {
-	if ( elem1->value < elem2->value)
+	const MoveInfo *p1 = (MoveInfo *)v1;
+	const MoveInfo *p2 = (MoveInfo *)v2;
+
+	if ( p1->value < p2->value)
 		return -1;
 
-	else if (elem1->value > elem2->value)
+	else if (p1->value > p2->value)
 		return 1;
 
 	else
 		return 0;
+}*/
+void printMovelist(MoveInfo mi[], int cntMoves) {
+	printf("do it**********\n");
+	for (int i=0; i < cntMoves; i++)
+	{
+		printf("moveInfo move  %s\n",  moveToString(mi[i].move ));
+		printf("moveInfo  value %d\n",  mi[i].value );
+	}
+	printf("done***********\n");
 }
 int calcBestMoveAux(gameState state, int depthlevel, int alpha, int beta)  {
 
@@ -161,6 +192,7 @@ int calcBestMoveAux(gameState state, int depthlevel, int alpha, int beta)  {
 
 
 	MoveInfo *movelist2 = makeMoveInfo(movelist, cntMoves);
+    printMovelist(movelist2, cntMoves);
 
 	int flags2=state.flags;
 	U64 hash=state.hash;
@@ -191,10 +223,14 @@ int calcBestMoveAux(gameState state, int depthlevel, int alpha, int beta)  {
 		}
 		bestScoreForThisIteration= MAX_INFINITY;
 
-		qsort((void *) &movelist2,              // Beginning address of array
+		/*qsort((void *) &movelist2,              // Beginning address of array
 				cntMoves,                           // Number of elements in array
 				sizeof(MoveInfo),              // Size of each element
-				(compfn)compare );                  // Pointer to compare function
+				(compfn)compare );                  // Pointer to compare function*/
+
+		sort_by_value(movelist2,cntMoves);
+
+		printMovelist(movelist2, cntMoves);
 
 		for (int i=0; i < cntMoves; i++)
 		{
@@ -214,7 +250,7 @@ int calcBestMoveAux(gameState state, int depthlevel, int alpha, int beta)  {
 			movelist2[i].value=score;
 			unmake(move, flags2, hash);
 
-			if (currentDepth >= 6 && debug)
+			if (currentDepth >= 6 && search_debug)
 				printf("Level  %d  move %s value %d bestval %d alpha %d beta %d\n",
 						currentDepth, moveToString(move),
 						score,
@@ -247,7 +283,7 @@ int calcBestMoveAux(gameState state, int depthlevel, int alpha, int beta)  {
 
 		currentDepth++;
 	}  //end of iteration deepening loop
-	if (debug) printLoggingInfo(currentDepth, bestMove, bestScoreForThisIteration);
+	if (search_debug) printLoggingInfo(currentDepth, bestMove, bestScoreForThisIteration);
 	//ponderMove=getPonderMove(state, bestMove);
 	free (movelist2);
 	return bestMove;

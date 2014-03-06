@@ -287,8 +287,8 @@ int materialDownBonus(int color, int bonus) {
 
 	//encourage drawish stuff:
 	//bishops of opposite color
-	int enemyBishopCount = bitScanForward(gs.bitboard[WB+( 1 -color)]);
-	int bishopCount = bitScanForward(gs.bitboard[WB+ color]);
+	int enemyBishopCount = popCount(gs.bitboard[WB+( 1 -color)]);
+	int bishopCount = popCount(gs.bitboard[WB+ color]);
 
 	if (bishopCount== 1 && enemyBishopCount== 1) {
 		if (( (gs.bitboard[WB+color] & lightSquares) != 0) &&
@@ -304,13 +304,13 @@ int materialDownBonus(int color, int bonus) {
 			}
 	}
 	// the fewer the opponents pawns, when we are down,  the better
-	int enemyPawnCount = bitScanForward(gs.bitboard[WP+(1-color)]);
+	int enemyPawnCount = popCount(gs.bitboard[WP+(1-color)]);
 	int pawnRemovalBonus =  ( 8 - enemyPawnCount)*PAWN_REMOVAL_BONUS;
 	//System.out.println("pawn Removal bonus " + pawnRemovalBonus);
 	bonus += pawnRemovalBonus;
 
 	//Give a bonus for two rooks (two rooks can be drawish)
-	int rookCount = bitScanForward(gs.bitboard[WR+color]);
+	int rookCount = popCount(gs.bitboard[WR+color]);
 
 	if (rookCount ==2)  {
 		//System.out.println("rook count bonus = 20 ");
@@ -318,7 +318,7 @@ int materialDownBonus(int color, int bonus) {
 	}
 
 	//Give a bonus for keeping the queen (the queen tend to make things more difficult for the opponent)
-	int queenCount = bitScanForward(gs.bitboard[WQ+color]);
+	int queenCount = popCount(gs.bitboard[WQ+color]);
 	if (queenCount ==1) {
 		//System.out.println("queen count bonus = 20 ");
 		bonus += QUEEN_COUNT_BONUS;

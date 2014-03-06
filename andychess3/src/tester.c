@@ -18,7 +18,14 @@
 #include "eval.h"
 #include "gamestate.h"
 #include "perft_test.h"
+#include "timeControl.h"
+#include "search.h"
+
 extern gameState gs;
+extern bool search_debug;
+
+void run_search( char *fen, char *answer) ;
+static const int depthLevel=7;
 
 static char *eval_test() {
 	assert(gs.initialized);
@@ -136,21 +143,84 @@ void illegal_move_test() {    // make sure it picks up illegal moves
 
 	}
 
+static  char * execute() {
+		 U64 start = currentTimeMillisecs() ;
+		 search_debug=true;
+		 char* moveStr = calcBestMove( gs, depthLevel);
+		 U64 end =  currentTimeMillisecs() ;
+		 U64 duration = end-start;
+		 //total=total+duration;
+		 printf("Time elapsed %lld milliSeconds \n", duration);
+		 printf("New Move %s\n" , moveStr);
+		 return moveStr;
+	}
+
+void run_search( char *fen, char *answer) {
+	printf("parseFen\n");
+	parseFen(fen);
+	printf("execute\n");
+	char * result = execute();
+	printf("Finished execute\n");
+	assert( strcmp(answer,result)==0);
+	free(result);
+}
+static void winAtChess()
+		{
+
+		char * fen[] = {
+				//"r1b1kb1r/pp2p1pp/3q4/5p2/3nQ3/P5NP/1PP2PP1/R1BBK2R w KQkq f6 0 16",
+				//"r1bqkbnr/pppp1ppp/8/3Pn3/5P2/8/PPP3PP/RNBQKBNR b KQkq f3 0 5",
+				"2rr3k/pp3pp1/1nnqbN1p/3pN3/2pP4/2P3Q1/PPB4P/R4RK1 w - - bm",
+				"rnbqkbnr/pppp1ppp/4p3/8/6P1/5P2/PPPPP2P/RNBQKBNR b KQkq - 0 2",
+				"rnbqkbnr/ppppp2p/8/5pp1/4P3/2N5/PPPP1PPP/R1BQKBNR w KQkq g6 0 3",
+				"r4kr1/1b2R1n1/pq4p1/4Q3/1p4P1/5P2/PPP4P/1K2R3 w - - 0 1",
+				"r3rk2/1p1n1p1Q/p1b1p3/2q3pN/8/2PB4/P1P2PP1/2KRR3 w - - 0 1",
+				"8/8/8/8/8/7K/5k2/4R3 b - - 0 68",
+				"5k2/6pp/p1qN4/1p1p4/3P4/2PKP2Q/PP3r2/3R4 b - - bm",   //wac005
+				"2br2k1/2q3rn/p2NppQ1/2p1P3/Pp5R/4P3/1P3PPP/3R2K1 w - - bm", //wac010
+				"r4q1k/p2bR1rp/2p2Q1N/5p2/5p2/2P5/PP3PPP/R5K1 w - - bm",
+				"3qrbk1/ppp1r2n/3pP2p/3P4/2P4P/1P3Q2/PB6/R4R1K w - - bm",
+				"6r1/3Pn1qk/p1p1P1rp/2Q2p2/2P5/1P4P1/P3R2P/5RK1 b - - bm"
+				//"3q1rk1/p4pp1/2pb3p/3p4/6Pr/1PNQ4/P1PB1PP1/4RRK1 b - - bm"
+		};
+		char * answers[] = {
+				//"e4d3",
+				//"e5g6",
+				"g3g6",
+				"d8h4",
+				"d1h5",
+				"e7f7",
+				"d3g6",
+				"f2e1",
+				"c6c4",
+				"h4h7",
+				"e7f7",
+				"f3f7",
+				"g6g3"
+				//"d6h2"
+		};
+
+		for (int i=0; i < sizeof(fen); i++) {
+			printf("run search %s %s\n", fen[i], answers[i]);
+			run_search( fen[i], answers[i]);
+		}
+		//System.out.println("Total " + total);
+	}
 int main(void) {
 
 	initializeAll();
 	printf("Finished initializing\n");
 	//illegal_move_test();
-	test_get_all_moves();
+	/*test_get_all_moves();
 	make_test();
 	check_test();
 	isLegal_test();
 	fflush(stdout);
-	eval_test();
+	eval_test();*/
 
 	//run_perft_test();
 
-
+	winAtChess();
 	return EXIT_SUCCESS;
 }
 
