@@ -614,7 +614,7 @@ int getPawnPushes(int cnt, int* moves, U64 pawns, U64 all, int side, int pieceMo
 			return cnt;
 		}
 
-	 int* generateCheckEvasionMoves(int color,  gameState gs) {
+	 int* generateCheckEvasionMoves(int color,  gameState gs, int *cntMoves) {
 			const int pushDiffs[]                   = {8, -8};
 			// note that we must still verify the legality of the king and pawn moves, after make,
 			//but for the the other generated moves, this is not needed
@@ -665,6 +665,7 @@ int getPawnPushes(int cnt, int* moves, U64 pawns, U64 all, int side, int pieceMo
 				cnt = getQueenNonCaptures(cnt, moves, queens, all, interveningSquare,WQ+color) ;
 				i++;
 			}
+			*cntMoves=cnt;
 			return moves;
 		}
 

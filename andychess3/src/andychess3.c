@@ -67,6 +67,30 @@ gameState gs;
 
 void printMove(int move);
 
+bool isEndGame() {
+		  return (gs.material[WHITE]  + gs.material[BLACK] < ENDGAME_MATERIAL_VALUE)? true: false;
+}
+
+bool isSameSquareRecapture() {
+		    if (gs.moveCounter < 2)  return false;
+			int lastVictim     = gs.capturedPieces[gs.moveCounter -1];
+			int previousVictim = gs.capturedPieces[gs.moveCounter -2];
+			if (lastVictim == -1 || previousVictim == -1 ) return false;
+			int value1 = valueMap[lastVictim];
+			int value2 = valueMap[previousVictim];
+			if ( value1 != value2)  return false;
+			int move1 = gs.moveHistory[gs.moveCounter -1];
+			int move2 = gs.moveHistory[gs.moveCounter -2];
+
+			int toSquare1 =  ((move1 >> TO_SHIFT) & SQUARE_MASK);
+			int toSquare2 =  ((move2 >> TO_SHIFT) & SQUARE_MASK);
+
+		    if (toSquare1==toSquare2) {
+		    	return true;
+		    }
+		    return false;
+	}
+
 //**********************************************************************
 void initializeFlags() {
 	U64 negWks = ~ (  C64(1)  << WKSIDE);
@@ -352,9 +376,11 @@ bool canCastle(int index, U64 allPieces) {
 	return false;
 }
 
-int* getAllMoves( int color) {
-	int * noncaps = generateNonCaptures(color);
-	int * caps = generateCapturesAndPromotions(color);
+int* getAllMoves( int color, int* cntMoves) {
+	int cntNonCaps, cntCaps;
+	int * noncaps = generateNonCaptures(color, &cntNonCaps);
+
+	int * caps = generateCapturesAndPromotions(color, &cntCaps);
 
 	int * moves = (int *) calloc(200, sizeof(int));
 
@@ -371,9 +397,10 @@ int* getAllMoves( int color) {
 	}
 	free(caps);
 	free(noncaps);
+	*cntMoves= cntNonCaps + cntCaps;
 	return moves;
 }
-int* generateCapturesAndPromotions(int color ) {
+int* generateCapturesAndPromotions(int color, int* cntMoves ) {
 	int * moves = (int *) calloc(75, sizeof(int));
 	int cnt=0;
 	U64 all= gs.bitboard[ALLPIECES];
@@ -389,12 +416,33 @@ int* generateCapturesAndPromotions(int color ) {
 
 	cnt = getQueenCaptures(cnt,moves, gs.bitboard[WQ+color],all,enemyPieces,WQ+color, gs.board);
 	cnt = getKingCaptures( cnt,moves, gs.bitboard[WK+color],enemyPieces,WK+color, gs.board);
-
+	*cntMoves=cnt;
 	return moves;
 }
 
+/* out_arraySize must be a valid address */
+/*int* myFunction(int* out_arraySize)
+{
+	int* myArray = (int*)malloc(5, sizeof(int));
+	*out_arraySize = 5;
+	return &(myArray[0]);
+}*/
 
-int * generateNonCaptures(int color ) {     // don't forget to free moves after using
+//so if I want to use that function, I'll do something like this:
+/*
+ * int arrayCount = 0;
+int* arrayContent = myFunction(&arrayCount);
+
+if (arrayContent != NULL)
+{
+	for (int i = 0; i < arrayCount; ++i)
+	{
+		printf("%i\n", arrayContent[i];  or whatever you want
+	}
+}*/
+
+
+int * generateNonCaptures(int color, int* numMoves ) {     // don't forget to free moves after using
 	int * moves = (int *) calloc(125, sizeof(int));
 	int cnt=0;
 
@@ -430,14 +478,14 @@ int * generateNonCaptures(int color ) {     // don't forget to free moves after 
 			moves[cnt++]=move;
 		}
 	}
-
+	*numMoves=cnt;
 	return moves;
 }
 
-void printMoves(int *moves) {
+void printMoves(int *moves, int numMoves) {
 
-	int i=0;
-	while (moves[i] != 0) {
+	for (int i=0; i < numMoves; i++)
+	{
 		printMove(moves[i]);
 		i++;
 	}
@@ -1156,11 +1204,12 @@ static char*  isLegal_test() {
 	printf("Running isLegal_test\n");
 	char fen[] = "rn1qkbnr/ppp2pp1/3p4/4p2p/4P2P/3P3b/PPP2PP1/RNBQKBNR w KQkq - 0 1";
 	parseFen(fen);
-	int * moves = generateNonCaptures(gs.color);
-	int *ptr=moves;
+	int numMoves;
+	int * moves = generateNonCaptures(gs.color, &numMoves);
 
-	while (*ptr) {
-		int move = *ptr;
+	for (int i=0; i < numMoves; i++)
+	{
+		int move = moves[i];
 		printf("Testing move ");
 		printMove(move);
 		if (!isMoveLegal(move)) {
@@ -1169,7 +1218,6 @@ static char*  isLegal_test() {
 			isMoveLegal(move);
 		}
 		assert( isMoveLegal(move));
-		ptr++;
 	}
 	return 0;
 }
@@ -1187,8 +1235,9 @@ static  char *  make_test() {
 	printf("Running make_test\n");
 	char fen[] = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R2qKb1R w KQkq - 0 1";
 	parseFen(fen);
-	int * moves = generateNonCaptures(gs.color);
-	int *ptr=moves;
+	int numMoves;
+	int * moves = generateNonCaptures(gs.color, &numMoves);
+
 
 	int saveBoard[64];
 	memcpy(saveBoard, gs.board, sizeof(gs.board));
@@ -1199,8 +1248,9 @@ static  char *  make_test() {
 	int flags = gs.flags;
 	U64 hash2 = gs.hash;
 
-	while (*ptr) {
-		int move = *ptr;
+	for (int i=0; i < numMoves; i++)
+	{
+		int move = moves[i];
 		printf("doing make/unmake on move  %s\n",  moveToString(move));
 		make(move);
 		unmake(move, flags, hash2);
@@ -1212,7 +1262,6 @@ static  char *  make_test() {
 		assert( comp_val==0);
 
 		// TODO : compare material positional color flags and hash
-		ptr++;
 	}
 	return 0;
 }
@@ -1234,14 +1283,15 @@ int main(void) {
 	eval_test();
 
 	printf("gen non caps\n");
-	int * moves = generateNonCaptures(gs.color);
-	printMoves(moves);
+	int numMoves;
+	int * moves = generateNonCaptures(gs.color, &numMoves);
+	printMoves(moves, numMoves);
 	free(moves);
 	printf("finished gen non caps\n");
 
 	printf("gen caps\n");
-	moves= generateCapturesAndPromotions(gs.color);
-	printMoves(moves);
+	moves= generateCapturesAndPromotions(gs.color, &numMoves);
+	printMoves(moves, numMoves);
 	free(moves);
 	printf("finished gen caps\n");
 

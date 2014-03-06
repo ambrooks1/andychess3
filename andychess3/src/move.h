@@ -35,6 +35,7 @@ char *  moveToString(int move);
 int createMove(int pieceMoving, int fromIndex, int toIndex, int capture, int type, int ordering);
 int moveType(int move);
 int orderingValue(int move);
+int setOrderingValue(int move, int value);
 int capture(int move);
 int fromIndex(int move);
 int toIndex(int move);

@@ -68,5 +68,6 @@ int  getQueenCaptures(int cnt, int* moves, U64 queens, U64  all, U64  target, in
 int getKingCaptures(int cnt, int* moves, U64 king, U64 target,  int fromType, int* board);
 
 void initializeMoveGen();
+int* generateCheckEvasionMoves(int color,  gameState gs, int *cntMoves);
 
 #endif /* MOVEGEN_H_ */

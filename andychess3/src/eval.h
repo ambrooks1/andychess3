@@ -19,5 +19,6 @@ short  blackBishopTable[64];
 
 void initializeEval();
 int getEvaluation(gameState gs);
+int getEvaluationMaterial(gameState gs);
 
 #endif /* EVAL_H_ */

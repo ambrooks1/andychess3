@@ -67,6 +67,23 @@ typedef unsigned long long U64 ;
 #define  PAWN_VALUE  100
 
 #define PAWN_STRUC_TBL_ENTRIES 500000
+#define TRANS_TBL_ENTRIES 5000000
+
+typedef struct MoveInfo {
+	int move;
+	int value;
+} MoveInfo;
+typedef int (*compfn)(const void*, const void*);
+
+typedef  struct transpositionTable {
+
+	U64 hashValue;
+	int bestmove;
+	int depthValue;
+	char flags;
+	int nodeScore;
+
+} transpositionTable;
 
 typedef  struct pawnStructureTable {
 

@@ -20,6 +20,10 @@ int bitScanForward(U64 bb) ;
 U64 nortFill(U64 gen) ;
 U64 soutFill(U64 gen) ;
 
+int min(int x, int y) {
+	int i = x < y ? x: y ;
+	return i;
+}
 int popCount (U64 x) {
    int count = 0;
    while (x) {

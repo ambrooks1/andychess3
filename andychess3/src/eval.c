@@ -1,9 +1,12 @@
 /*
  * eval.c
+
  *
  *  Created on: Mar 2, 2014
  *      Author: andrewbrooks
  */
+#include <stdlib.h>
+#include <stdio.h>
 #include "stdbool.h"
 #include "defs.h"
 #include "util.h"
@@ -151,35 +154,35 @@ int twoBishopBonus(int color) {
 	}
 	return 0;
 }
-		 int  bonus( int color) {
+int  bonus( int color) {
 
-			int bonus=0;
+	int bonus=0;
 
-			if (gs.material[WHITE]  + gs.material[BLACK] >= ENDGAME_MATERIAL_VALUE)
-			{
-				bonus = openingMidgameBonus(color, bonus);
+	if (gs.material[WHITE]  + gs.material[BLACK] >= ENDGAME_MATERIAL_VALUE)
+	{
+		bonus = openingMidgameBonus(color, bonus);
 
-			}
-			else {    // specific to endgame
-				bonus = endgameBonus(color, bonus);
-			}
+	}
+	else {    // specific to endgame
+		bonus = endgameBonus(color, bonus);
+	}
 
-			if (gs.material[1-color] - gs.material[color] >= 200) // we are down in material at least two pawns
-			{
-				bonus = materialDownBonus(color, bonus);
-			}
-			bonus += twoBishopBonus(color);
-			if (( gs.bitboard[WR+color] & seventhRank[color]) != 0) {
-				bonus += ROOK_ON_SEVENTH_BONUS;
-			}
-			//bonus += tropismPenalty(color);
+	if (gs.material[1-color] - gs.material[color] >= 200) // we are down in material at least two pawns
+	{
+		bonus = materialDownBonus(color, bonus);
+	}
+	bonus += twoBishopBonus(color);
+	if (( gs.bitboard[WR+color] & seventhRank[color]) != 0) {
+		bonus += ROOK_ON_SEVENTH_BONUS;
+	}
+	//bonus += tropismPenalty(color);
 
-			//System.out.println("bonus " + bonus);
+	//System.out.println("bonus " + bonus);
 
-			return bonus;
-		}
+	return bonus;
+}
 
-	/*
+/*
 		private int rookEvaluation(int color) {
 			int bonus=0;
 			U64 rooks=bitboard[WR+color];
@@ -203,192 +206,192 @@ int twoBishopBonus(int color) {
 			return bonus;
 		}*/
 
-		 int openingMidgameBonus(int color, int bonus) {
+int openingMidgameBonus(int color, int bonus) {
 
-			if ( ((queenPawns[color] & gs.bitboard[WP+color]) != 0 )
-				&&  ((queenPawnBlocker[color] & gs.bitboard[WHITEPIECES+color]) != 0 )  )
+	if ( ((queenPawns[color] & gs.bitboard[WP+color]) != 0 )
+			&&  ((queenPawnBlocker[color] & gs.bitboard[WHITEPIECES+color]) != 0 )  )
+	{
+		bonus += CENTER_PAWN_BLOCK_PENALTY;
+	}
+	else
+		if ( ((kingPawns[color] & gs.bitboard[WP+color]) != 0 )
+				&&  ((kingPawnBlocker[color] & gs.bitboard[WHITEPIECES+color]) != 0 )  )
+		{
+			bonus += CENTER_PAWN_BLOCK_PENALTY;
+		}
+
+	if  (  (  gs.bitboard[10+color] &  ksCastled[color])    != 0 )
+	{
+		U64 x = kingsideMask[color] & gs.bitboard[WP+color];
+
+		if (!goodKingsideShield(x, color))
+		{
+			//kingside castled with kside pawn shield
+			//penalty for moving pawns away from the shield in front of castled king on kingside
+			//System.out.println("wingPawnPushPenalty kingside = -35");
+			bonus += WING_PAWN_PUSH_PENALTY;
+		}
+		if (( gs.bitboard[WP+color] &   wreckedQSPawnShield[color]) != 0 ) {  // if castled kingside, definitely push QSIDE pawns
+			bonus += WING_PAWN_PUSH_BONUS;
+		}
+	}
+
+	else
+
+		if  (  (  gs.bitboard[10+color] &  qsCastled[color])    != 0 )
+		{
+			U64 x = queensideMask[color] & gs.bitboard[WP+color];
+
+			if (!goodQueensideShield(x, color))
 			{
-				 bonus += CENTER_PAWN_BLOCK_PENALTY;
-			}
-			else
-				if ( ((kingPawns[color] & gs.bitboard[WP+color]) != 0 )
-						&&  ((kingPawnBlocker[color] & gs.bitboard[WHITEPIECES+color]) != 0 )  )
-					{
-						 bonus += CENTER_PAWN_BLOCK_PENALTY;
-					}
-
-			if  (  (  gs.bitboard[10+color] &  ksCastled[color])    != 0 )
-			{
-				U64 x = kingsideMask[color] & gs.bitboard[WP+color];
-
-				if (!goodKingsideShield(x, color))
-				{
-				  //kingside castled with kside pawn shield
 				//penalty for moving pawns away from the shield in front of castled king on kingside
-				//System.out.println("wingPawnPushPenalty kingside = -35");
-				  bonus += WING_PAWN_PUSH_PENALTY;
-				}
-				if (( gs.bitboard[WP+color] &   wreckedQSPawnShield[color]) != 0 ) {  // if castled kingside, definitely push QSIDE pawns
-					 bonus += WING_PAWN_PUSH_BONUS;
-				}
+				//System.out.println("wingPawnPushPenalty qside  = -35");
+				bonus += WING_PAWN_PUSH_PENALTY;
 			}
-
-			else
-
-				if  (  (  gs.bitboard[10+color] &  qsCastled[color])    != 0 )
-				{
-					U64 x = queensideMask[color] & gs.bitboard[WP+color];
-
-					if (!goodQueensideShield(x, color))
-					{
-					//penalty for moving pawns away from the shield in front of castled king on kingside
-					//System.out.println("wingPawnPushPenalty qside  = -35");
-					   bonus += WING_PAWN_PUSH_PENALTY;
-				    }
-					if (( gs.bitboard[WP+color] &   wreckedKSPawnShield[color]) != 0 ) {  // if castled queensider, definitely push KSIDE pawns
-						 bonus += WING_PAWN_PUSH_BONUS;
-					}
-				}
-
-			if (  (gs.bitboard[10+color] & safeMiddleGameKingSquares[color]) == 0) {  //oops, king took a walk before the endgame
-						//System.out.println("kingWalkPenalty = - 35");
-						bonus += KING_WALK_PENALTY;
+			if (( gs.bitboard[WP+color] &   wreckedKSPawnShield[color]) != 0 ) {  // if castled queensider, definitely push KSIDE pawns
+				bonus += WING_PAWN_PUSH_BONUS;
 			}
-			return bonus;
 		}
 
-		 int endgameBonus(int color, int bonus) {
-			//endgame bonus for centralized king
-			int idx = bitScanForward(gs.bitboard[WK+color]);
-			int ktegBonus = kingTableEndGame[idx];
-			bonus += ktegBonus;
-			//System.out.println("King table endgame bonus " + ktegBonus);
-			// encouragement to push pawns in endgame
-			U64 pawnRanks[2][2] =
-				{{ RANK4, RANK5},
-					{ RANK5, RANK4} };
-			const int pawnBonus[] = { 20, 30};
-			int pawnCountForRank[2];
+	if (  (gs.bitboard[10+color] & safeMiddleGameKingSquares[color]) == 0) {  //oops, king took a walk before the endgame
+		//System.out.println("kingWalkPenalty = - 35");
+		bonus += KING_WALK_PENALTY;
+	}
+	return bonus;
+}
 
-			for (int i=0; i < 2; i++) {
-				pawnCountForRank[i] = bitScanForward(gs.bitboard[WP+color] & pawnRanks[color][i]);
-				int egPawnPushBonus = pawnCountForRank[i]*pawnBonus[i];
-				//System.out.println("endgame pawn push bonus" + egPawnPushBonus);
-				bonus += egPawnPushBonus;
-			}
-			return bonus;
+int endgameBonus(int color, int bonus) {
+	//endgame bonus for centralized king
+	int idx = bitScanForward(gs.bitboard[WK+color]);
+	int ktegBonus = kingTableEndGame[idx];
+	bonus += ktegBonus;
+	//System.out.println("King table endgame bonus " + ktegBonus);
+	// encouragement to push pawns in endgame
+	U64 pawnRanks[2][2] =
+	{{ RANK4, RANK5},
+			{ RANK5, RANK4} };
+	const int pawnBonus[] = { 20, 30};
+	int pawnCountForRank[2];
+
+	for (int i=0; i < 2; i++) {
+		pawnCountForRank[i] = bitScanForward(gs.bitboard[WP+color] & pawnRanks[color][i]);
+		int egPawnPushBonus = pawnCountForRank[i]*pawnBonus[i];
+		//System.out.println("endgame pawn push bonus" + egPawnPushBonus);
+		bonus += egPawnPushBonus;
+	}
+	return bonus;
+}
+
+int materialDownBonus(int color, int bonus) {
+	//ideas from : http://www.mayothi.com/nagaskakichess4.html
+
+	//encourage drawish stuff:
+	//bishops of opposite color
+	int enemyBishopCount = bitScanForward(gs.bitboard[WB+( 1 -color)]);
+	int bishopCount = bitScanForward(gs.bitboard[WB+ color]);
+
+	if (bishopCount== 1 && enemyBishopCount== 1) {
+		if (( (gs.bitboard[WB+color] & lightSquares) != 0) &&
+				( (gs.bitboard[WB+(1-color)] & darkSquares) != 0)) {
+			//System.out.println("Bishops of opp color bonus = 50");
+			bonus += 50;
 		}
-
-		 int materialDownBonus(int color, int bonus) {
-			//ideas from : http://www.mayothi.com/nagaskakichess4.html
-
-			//encourage drawish stuff:
-			//bishops of opposite color
-			int enemyBishopCount = bitScanForward(gs.bitboard[WB+( 1 -color)]);
-			int bishopCount = bitScanForward(gs.bitboard[WB+ color]);
-
-			if (bishopCount== 1 && enemyBishopCount== 1) {
-				if (( (gs.bitboard[WB+color] & lightSquares) != 0) &&
-				    ( (gs.bitboard[WB+(1-color)] & darkSquares) != 0)) {
-					//System.out.println("Bishops of opp color bonus = 50");
-					bonus += 50;
-				}
-				else
-					if (( (gs.bitboard[WB+color] & darkSquares) != 0) &&
-						    ( (gs.bitboard[WB+(1-color)] & lightSquares) != 0)) {
-						//System.out.println("Bishops of opp color bonus = 50");
-							bonus += 50;
-						}
+		else
+			if (( (gs.bitboard[WB+color] & darkSquares) != 0) &&
+					( (gs.bitboard[WB+(1-color)] & lightSquares) != 0)) {
+				//System.out.println("Bishops of opp color bonus = 50");
+				bonus += 50;
 			}
-			// the fewer the opponents pawns, when we are down,  the better
-			int enemyPawnCount = bitScanForward(gs.bitboard[WP+(1-color)]);
-			int pawnRemovalBonus =  ( 8 - enemyPawnCount)*PAWN_REMOVAL_BONUS;
-			//System.out.println("pawn Removal bonus " + pawnRemovalBonus);
-			bonus += pawnRemovalBonus;
+	}
+	// the fewer the opponents pawns, when we are down,  the better
+	int enemyPawnCount = bitScanForward(gs.bitboard[WP+(1-color)]);
+	int pawnRemovalBonus =  ( 8 - enemyPawnCount)*PAWN_REMOVAL_BONUS;
+	//System.out.println("pawn Removal bonus " + pawnRemovalBonus);
+	bonus += pawnRemovalBonus;
 
-			//Give a bonus for two rooks (two rooks can be drawish)
-			int rookCount = bitScanForward(gs.bitboard[WR+color]);
+	//Give a bonus for two rooks (two rooks can be drawish)
+	int rookCount = bitScanForward(gs.bitboard[WR+color]);
 
-			if (rookCount ==2)  {
-				//System.out.println("rook count bonus = 20 ");
-				bonus += ROOK_COUNT_BONUS;
-			}
+	if (rookCount ==2)  {
+		//System.out.println("rook count bonus = 20 ");
+		bonus += ROOK_COUNT_BONUS;
+	}
 
-			//Give a bonus for keeping the queen (the queen tend to make things more difficult for the opponent)
-			int queenCount = bitScanForward(gs.bitboard[WQ+color]);
-			if (queenCount ==1) {
-				//System.out.println("queen count bonus = 20 ");
-				bonus += QUEEN_COUNT_BONUS;
-			}
-			return bonus;
+	//Give a bonus for keeping the queen (the queen tend to make things more difficult for the opponent)
+	int queenCount = bitScanForward(gs.bitboard[WQ+color]);
+	if (queenCount ==1) {
+		//System.out.println("queen count bonus = 20 ");
+		bonus += QUEEN_COUNT_BONUS;
+	}
+	return bonus;
+}
+
+int*  pawnStructureBonus() {
+	//passers are more valuable as the material decreases and as their rank increases
+
+	int bonusByRank[]={ 0, 4, 6, 8, 10, 12, 14, 16 };  // for passed pawns
+
+	U64 whitePawns=gs.bitboard[WP];
+	U64 blackPawns=gs.bitboard[BP];
+
+	U64 hash= gs.bitboard[WP] | gs.bitboard[BP];
+	if ( pst_exists(hash, whitePawns, blackPawns)) {
+		return pst_getScore(hash);
+	}
+
+	int totalMaterial= gs.material[0] + gs.material[1];    //4325 is max , below 3000 is endgame
+
+
+	//PASSED PAWN BONUS
+	int x=16;
+	if (totalMaterial > 4000) {
+		x=8;
+	}
+	else
+		if (totalMaterial > 3000 && totalMaterial <=4000 )  {
+			x=10;
 		}
-
-		  int*  pawnStructureBonus() {
-				//passers are more valuable as the material decreases and as their rank increases
-
-			int bonusByRank[]={ 0, 4, 6, 8, 10, 12, 14, 16 };  // for passed pawns
-
-			U64 whitePawns=gs.bitboard[WP];
-			U64 blackPawns=gs.bitboard[BP];
-
-			U64 hash= gs.bitboard[WP] | gs.bitboard[BP];
-			if ( pst_exists(hash, whitePawns, blackPawns)) {
-				return pst_getScore(hash);
-			}
-
-			int totalMaterial= gs.material[0] + gs.material[1];    //4325 is max , below 3000 is endgame
-
-
-			//PASSED PAWN BONUS
-			int x=16;
-			if (totalMaterial > 4000) {
-				x=8;
+		else
+			if (totalMaterial > 2000 && totalMaterial <=3000 )  {
+				x=12;
 			}
 			else
-				if (totalMaterial > 3000 && totalMaterial <=4000 )  {
-					x=10;
+				if (totalMaterial > 1000 && totalMaterial <=2000 )  {
+					x=14;
 				}
-				else
-					if (totalMaterial > 2000 && totalMaterial <=3000 )  {
-						x=12;
-					}
-					else
-						if (totalMaterial > 1000 && totalMaterial <=2000 )  {
-						x=14;
-					}
 
-			U64 passers[2];
+	U64 passers[2];
 
-			passers[0]= passedPawnsWhite(whitePawns, blackPawns);
+	passers[0]= passedPawnsWhite(whitePawns, blackPawns);
 
-			passers[1]= passedPawnsBlack(whitePawns, blackPawns);
+	passers[1]= passedPawnsBlack(whitePawns, blackPawns);
 
 
-			int * passedPawnBonus = (int *) calloc(2, sizeof(int));
+	int * passedPawnBonus = (int *) calloc(2, sizeof(int));
 
-			int y,ppBonus,rank;
+	int y,ppBonus,rank;
 
-			for (int i=0; i < 2; i++) {
+	for (int i=0; i < 2; i++) {
 
-				while (passers[i]){
-					int idx = bitScanForward(passers[i]);
-					rank =  (8 - idx/8);
-					if (i == 0) rank = 9-rank;
+		while (passers[i]){
+			int idx = bitScanForward(passers[i]);
+			rank =  (8 - idx/8);
+			if (i == 0) rank = 9-rank;
 
-					y=rank*bonusByRank[rank];
-					ppBonus= x+ y;
-					passedPawnBonus[i] +=ppBonus;
+			y=rank*bonusByRank[rank];
+			ppBonus= x+ y;
+			passedPawnBonus[i] +=ppBonus;
 
-					passers[i] = passers[i] & ( passers[i] - 1 );
-				}
-			}
-			int bonus[2];
-			bonus[0] = passedPawnBonus[0];
-			bonus[1] =  passedPawnBonus[1];
+			passers[i] = passers[i] & ( passers[i] - 1 );
+		}
+	}
+	int bonus[2];
+	bonus[0] = passedPawnBonus[0];
+	bonus[1] =  passedPawnBonus[1];
 
-			//END PASSED PAWN BONUS
+	//END PASSED PAWN BONUS
 
-			/*int[] isolated = new int[2];  // number of isolated pawns, white black
+	/*int[] isolated = new int[2];  // number of isolated pawns, white black
 			int[] doubled = new int[2];
 
 			isolated[0] = BitUtil.isolatedPawnsWhite(whitePawns, blackPawns);
@@ -406,11 +409,11 @@ int twoBishopBonus(int color) {
 			int blackrookCount = bitScanForward(bitboard[BR]);
 			bonus[1] += doubled[1]*doubledPawnPenalty(blackrookCount);*/
 
-			pst_store(hash, whitePawns, blackPawns, bonus[0], bonus[1]);
-			return passedPawnBonus;
-		}
+	pst_store(hash, whitePawns, blackPawns, bonus[0], bonus[1]);
+	return passedPawnBonus;
+}
 
-		/*private int  doubledPawnPenalty(int rookCount) {
+/*private int  doubledPawnPenalty(int rookCount) {
 			switch(rookCount) {
 				case 2: return -10;
 				case 1: return -15;
@@ -418,40 +421,40 @@ int twoBishopBonus(int color) {
 				default : return 0;
 			}
 		}*/
-		 int getEvaluation(gameState gs) {
+int getEvaluation(gameState gs) {
 
-			int tot[2];
+	int tot[2];
 
-			int* passedPawnBonus= pawnStructureBonus();
-			//System.out.println("WHITE PP BONUS : " + passedPawnBonus[0] + " BLACK PP BONUS " + passedPawnBonus[1]);
-			tot[0] = gs.material[0]
-					+ gs.positional[0]
-					+ bonus(0)
-					+ passedPawnBonus[0];
+	int* passedPawnBonus= pawnStructureBonus();
+	//System.out.println("WHITE PP BONUS : " + passedPawnBonus[0] + " BLACK PP BONUS " + passedPawnBonus[1]);
+	tot[0] = gs.material[0]
+	                     + gs.positional[0]
+	                                     + bonus(0)
+	                                     + passedPawnBonus[0];
 
-			tot[1] = gs.material[1]
-					+ gs.positional[1]
-					+ bonus(1)
-					+ passedPawnBonus[1];
-			int eval =  tot[gs.color] - tot[1-gs.color];
+	tot[1] = gs.material[1]
+	                     + gs.positional[1]
+	                                     + bonus(1)
+	                                     + passedPawnBonus[1];
+	int eval =  tot[gs.color] - tot[1-gs.color];
 
-			free(passedPawnBonus);
-			return eval;
+	free(passedPawnBonus);
+	return eval;
 
-		}
-		 int getEvaluationMaterial(gameState gs) {
+}
+int getEvaluationMaterial(gameState gs) {
 
-			int tot[2];
+	int tot[2];
 
-			tot[0] = gs.material[0];
+	tot[0] = gs.material[0];
 
 
-			tot[1] = gs.material[1] ;
+	tot[1] = gs.material[1] ;
 
-			int eval =  tot[gs.color] - tot[1-gs.color];
-			return eval;
+	int eval =  tot[gs.color] - tot[1-gs.color];
+	return eval;
 
-		}
+}
 
 void initializeEval() {
 
