@@ -112,13 +112,13 @@ typedef struct gameState {
 	int 			capturedPieces[MAX_PLIES];
 	int   			moveCounter;
 
-	U64 pieces[12][64] ;  	// [piece type][square]
-	U64 en_passant[64] ;   	 	// En passant
-	U64   side;    // Used for changing sides
-	U64  W_CASTLING_RIGHTS[4];   // both ways, short, long and none  0,1,2,3
-	U64  B_CASTLING_RIGHTS[4];   // both ways, short, long and none
+	U64 			pieces[12][64] ;  	// [piece type][square]
+	U64 			en_passant[64] ;   	 	// En passant
+	U64   			side;    // Used for changing sides
+	U64  			W_CASTLING_RIGHTS[4];   // both ways, short, long and none  0,1,2,3
+	U64  			B_CASTLING_RIGHTS[4];   // both ways, short, long and none
 
-    int currentPly;
-
+    int 			currentPly;
+    bool 			initialized;
 } gameState;
 #endif /* DEFS_H_ */

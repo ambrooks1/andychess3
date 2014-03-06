@@ -13,6 +13,7 @@
 #include "move.h"
 #include "util.h"
 #include "magic.h"
+#include "assert.h"
 
  U64 knightMoveArray[64];
  U64  kingMoveArray[64];
@@ -27,7 +28,7 @@
 int* isInCheck2( int color, int piece, int type, int kingIdx, U64 allPieces, gameState gs);
 
  U64 kingAttacks (U64 b)
-		{
+ {
 		        U64 c = b;
 		        b |= (b >> 1) & 0x7F7F7F7F7F7F7F7FL;
 		        b |= (b << 1) & 0xFEFEFEFEFEFEFEFEL;
@@ -284,7 +285,7 @@ U64 getBlackPawnCheckAttack(U64 king) {
   }
   int getKingNonCaptures(int cnt, int* moves, U64 king, U64 target,  int fromType)
    {
-
+	  	  assert(king != 0);
  		  int victim=-1, orderValue, move;
  		  U64 attacks;
  		  victim=noVictim;
@@ -310,7 +311,7 @@ U64 getBlackPawnCheckAttack(U64 king) {
    }
   int getKingCaptures(int cnt, int* moves, U64 king, U64 target,  int fromType, int* board)
   {
-
+	  assert(king != 0);
 	  int victim=-1, orderValue, move;
 	  U64 attacks;
 	  victim=noVictim;

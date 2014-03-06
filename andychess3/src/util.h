@@ -12,7 +12,7 @@ int min(int x, int y);
 int bitScanForward(U64 bb);
 int convertPiece(char c);
 char reverseConvertPiece(int i);
-
+void printMoves(int *moves, int numMoves);
 int getIndexFromSquare ( char *square);
 const char* getSquareFromIndex(int idx);
 

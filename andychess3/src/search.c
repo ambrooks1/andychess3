@@ -17,7 +17,7 @@
 #include "timecontrol.h"
 #include "search.h"
 #include "move.h"
-#include "andychess3.h"
+#include "gamestate.h"
 #include "SEE.h"
 #include "TranspositionTable.h"
 #include "eval.h"

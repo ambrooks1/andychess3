@@ -10,6 +10,9 @@
 
 #include <stdbool.h>
 
+void printBoard();
+void initializeAll();
+void parseFen( char fen[]);
 void unmake(int move, int flags2, U64 hash2);
 void make(int move);
 int* generateCapturesAndPromotions(int color, int *numMoves ) ;

@@ -20,8 +20,7 @@
 #include "move.h"
 #include "magic.h"
 #include "eval.h"
-
-#include "andychess3.h"
+#include "gamestate.h"
 
 const U64 XYA =  C64(6);
 const U64 XYB =  C64(112);
@@ -63,7 +62,7 @@ extern U64 knightMoveArray[64];
 extern U64  kingMoveArray[64];
 extern U64 pawnCheckArray[2][64];    //white, black
 
-gameState gs;
+gameState gs = { .initialized=false };
 
 void printMove(int move);
 
@@ -212,7 +211,7 @@ void fenToCastlingPrivilege(char *castlingS) {
 void convertRowsToBoard(char* rows[8]) {
 
 	int index=0;
-	printf("convertRowsToBoard\n");
+	//printf("convertRowsToBoard\n");
 	for (int i=0; i < 8; i++) {
 
 		char *p = rows[i];
@@ -236,12 +235,13 @@ void convertRowsToBoard(char* rows[8]) {
 			c++;
 		} //end while
 	}  //end for
-	printf("Finished convertRowsToBoard\n");
+	//printf("Finished convertRowsToBoard\n");
 }
 //**********************************************************************
 
 
 void parseFen( char fen[]) {
+    assert(gs.initialized);
 
 	gs.positional[WHITE]=0;
 	gs.positional[BLACK]=0;
@@ -317,9 +317,9 @@ void parseFen( char fen[]) {
 	}
 
 	convertRowsToBoard(  rows);
-	printf("Doing setAllBitboards\n");
+	//printf("Doing setAllBitboards\n");
 	setAllBitboards();
-	printf("Finished Doing setAllBitboards\n");
+	//printf("Finished Doing setAllBitboards\n");
 
 
 	gs.material[WHITE]=materialValue(WHITE);
@@ -329,21 +329,21 @@ void parseFen( char fen[]) {
 	for (int i = 0; i < 6; i++)  {
 		if (i % 2 == 0) {
 			int whitePos = addPositionalValueForType( i);
-			printf("whitepos %d\n", whitePos);
+			//printf("whitepos %d\n", whitePos);
 			gs.positional[WHITE] += whitePos;
 		}
 		else {
 			int blackPos = addPositionalValueForType( i);
-			printf("blackPos %d\n", blackPos);
+			//printf("blackPos %d\n", blackPos);
 			gs.positional[BLACK] += blackPos;
 		}
-		printf("whitepositional %d blackpositional %d\n", gs.positional[WHITE], gs.positional[BLACK]);
+		//printf("whitepositional %d blackpositional %d\n", gs.positional[WHITE], gs.positional[BLACK]);
 	}
 
-	printf("Doing calc hash\n");
+	//printf("Doing calc hash\n");
 	gs.hash= calcHash();
-	printf("Finished Doing calc hash\n");
-	printf("Finished parse fen\n");
+	//printf("Finished Doing calc hash\n");
+	//printf("Finished parse fen\n");
 }
 
 //**********************************************************************
@@ -379,33 +379,38 @@ bool canCastle(int index, U64 allPieces) {
 int* getAllMoves( int color, int* cntMoves) {
 	int cntNonCaps, cntCaps;
 	int * noncaps = generateNonCaptures(color, &cntNonCaps);
-
 	int * caps = generateCapturesAndPromotions(color, &cntCaps);
 
-	int * moves = (int *) calloc(200, sizeof(int));
+	//printf("number of moves: caps %d number of noncaps %d \n",cntCaps,  cntNonCaps);
+	int cnt2 = cntNonCaps+ cntCaps;
+	if (cnt2==0) {
+		*cntMoves=0;
+		return 0;
+	}
 
-	int *ptr=noncaps;
-	int i=0;
-	while (ptr) {
-		moves[i++]= *ptr;
-		ptr++;
+	int * moves2 = (int *) calloc(cnt2, sizeof(int));
+	int j=0;
+	for (int i=0 ; i < cntNonCaps; i++) {
+		moves2[j]=noncaps[i];
+		j++;
 	}
-	ptr=caps;
-	while (ptr) {
-		moves[i++]= *ptr;
-		ptr++;
+	for (int i=0 ; i < cntCaps; i++) {
+		moves2[j]=caps[i];
+		j++;
 	}
+
 	free(caps);
 	free(noncaps);
-	*cntMoves= cntNonCaps + cntCaps;
-	return moves;
+	*cntMoves=cnt2;
+	return moves2;
 }
 int* generateCapturesAndPromotions(int color, int* cntMoves ) {
 	int * moves = (int *) calloc(75, sizeof(int));
 	int cnt=0;
 	U64 all= gs.bitboard[ALLPIECES];
+	assert(all != 0);
 	U64 enemyPieces=gs.bitboard[WHITEPIECES+(1-color)];
-
+	assert(enemyPieces != 0);
 	cnt = getPawnCapturesAndPromotions(cnt, moves, gs.bitboard[WP + color], all, enemyPieces, color, WP+color, gs.flags, gs.board);
 
 	cnt =getKnightCaptures(cnt,moves, gs.bitboard[WN+color], enemyPieces,WN+color, gs.board);
@@ -417,37 +422,22 @@ int* generateCapturesAndPromotions(int color, int* cntMoves ) {
 	cnt = getQueenCaptures(cnt,moves, gs.bitboard[WQ+color],all,enemyPieces,WQ+color, gs.board);
 	cnt = getKingCaptures( cnt,moves, gs.bitboard[WK+color],enemyPieces,WK+color, gs.board);
 	*cntMoves=cnt;
-	return moves;
-}
-
-/* out_arraySize must be a valid address */
-/*int* myFunction(int* out_arraySize)
-{
-	int* myArray = (int*)malloc(5, sizeof(int));
-	*out_arraySize = 5;
-	return &(myArray[0]);
-}*/
-
-//so if I want to use that function, I'll do something like this:
-/*
- * int arrayCount = 0;
-int* arrayContent = myFunction(&arrayCount);
-
-if (arrayContent != NULL)
-{
-	for (int i = 0; i < arrayCount; ++i)
-	{
-		printf("%i\n", arrayContent[i];  or whatever you want
+	if (cnt==0) {
+		return 0;
 	}
-}*/
+	int * moves2 = (int *) calloc(cnt, sizeof(int));
+	memcpy( moves2, moves, cnt*sizeof(int));
+	free(moves);
+	return moves2;
+}
 
 
 int * generateNonCaptures(int color, int* numMoves ) {     // don't forget to free moves after using
-	int * moves = (int *) calloc(125, sizeof(int));
-	int cnt=0;
-
 	U64 all= gs.bitboard[ALLPIECES];
+    assert(all != 0);
 
+    int * moves = (int *) calloc(125, sizeof(int));
+    int cnt=0;
 	cnt = getPawnPushes(cnt, moves, gs.bitboard[WP +gs.color], all, gs.color, WP+gs.color);
 	cnt = getKnightNonCaptures(cnt,moves,gs.bitboard[WN+gs.color], ~all, WN+gs.color);
 	cnt = getBishopNonCaptures(cnt,moves,gs.bitboard[WB+gs.color],all, ~all, WB+gs.color);
@@ -479,17 +469,16 @@ int * generateNonCaptures(int color, int* numMoves ) {     // don't forget to fr
 		}
 	}
 	*numMoves=cnt;
-	return moves;
-}
-
-void printMoves(int *moves, int numMoves) {
-
-	for (int i=0; i < numMoves; i++)
-	{
-		printMove(moves[i]);
-		i++;
+	if (cnt==0) {
+			return 0;
 	}
+	int * moves2 = (int *) calloc(cnt, sizeof(int));
+	memcpy( moves2, moves, cnt*sizeof(int));
+	free(moves);
+	return moves2;
 }
+
+
 int getPSTValue2(int victim, int to) {
 
 	switch (victim) {
@@ -1179,122 +1168,7 @@ void initializeAll() {
 	initializeEval();
 	initializeFlags();
 	initializeZobrist();
+	gs.initialized=true;
 }
 
-void printMove(int move) {
-	char *moveStr = moveToString(move);
-	printf( "%s\n", moveStr);
-	free(moveStr);
-}
-static char *eval_test() {
-	printf("Running eval_test\n");
-	char fen[] = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-	parseFen(fen);
-	assert(gs.material[0]==gs.material[1]);
-	assert(gs.material[0]==4165);
-	printf(" material white %d material black %d\n", gs.material[0],gs.material[1]);
-	printf(" positional white %d positional black %d\n", gs.positional[0],gs.positional[1]);
 
-	int eval = getEvaluation(gs);
-	printf("evaluation= %d\n", eval);
-	assert( eval==0);
-	return 0;
-}
-static char*  isLegal_test() {
-	printf("Running isLegal_test\n");
-	char fen[] = "rn1qkbnr/ppp2pp1/3p4/4p2p/4P2P/3P3b/PPP2PP1/RNBQKBNR w KQkq - 0 1";
-	parseFen(fen);
-	int numMoves;
-	int * moves = generateNonCaptures(gs.color, &numMoves);
-
-	for (int i=0; i < numMoves; i++)
-	{
-		int move = moves[i];
-		printf("Testing move ");
-		printMove(move);
-		if (!isMoveLegal(move)) {
-			printf("Not legal ");
-			printMove(move);
-			isMoveLegal(move);
-		}
-		assert( isMoveLegal(move));
-	}
-	return 0;
-}
-static  char * check_test() {
-	printf("Running check_test\n");
-	char fen[] = "rnbqk1nr/pppp1Bpp/8/2b1p3/4P3/8/PPPP1PPP/RNBQK1NR w KQkq - 0 1";
-	//black king is in check from white bishop
-	parseFen(fen);
-
-	assert( isInCheck(BLACK));
-	assert( !isInCheck(WHITE));
-	return 0;
-}
-static  char *  make_test() {
-	printf("Running make_test\n");
-	char fen[] = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R2qKb1R w KQkq - 0 1";
-	parseFen(fen);
-	int numMoves;
-	int * moves = generateNonCaptures(gs.color, &numMoves);
-
-
-	int saveBoard[64];
-	memcpy(saveBoard, gs.board, sizeof(gs.board));
-
-	U64 saveBitboards[NUMBITBOARDS];
-	memcpy(saveBitboards, gs.bitboard, sizeof(gs.bitboard));
-
-	int flags = gs.flags;
-	U64 hash2 = gs.hash;
-
-	for (int i=0; i < numMoves; i++)
-	{
-		int move = moves[i];
-		printf("doing make/unmake on move  %s\n",  moveToString(move));
-		make(move);
-		unmake(move, flags, hash2);
-
-		int comp_val=memcmp(saveBoard, gs.board,  64*sizeof(int));
-		assert(comp_val==0);
-
-		comp_val=memcmp(saveBitboards, gs.bitboard,  NUMBITBOARDS*sizeof(U64));
-		assert( comp_val==0);
-
-		// TODO : compare material positional color flags and hash
-	}
-	return 0;
-}
-int main(void) {
-
-	initializeAll();
-
-	//char fen[] = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-	//char fen[]= "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1";
-	//char fen[] = "rn1qkbnr/ppp2pp1/3p4/4p2p/4P2P/3P3b/PPP2PP1/RNBQKBNR w KQkq - 0 1";
-	char fen[] = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R2qKb1R w KQkq - 0 1";
-	parseFen(fen);
-	printBoard();
-	// displayBitboards();
-
-	make_test();
-	check_test();
-	isLegal_test();
-	eval_test();
-
-	printf("gen non caps\n");
-	int numMoves;
-	int * moves = generateNonCaptures(gs.color, &numMoves);
-	printMoves(moves, numMoves);
-	free(moves);
-	printf("finished gen non caps\n");
-
-	printf("gen caps\n");
-	moves= generateCapturesAndPromotions(gs.color, &numMoves);
-	printMoves(moves, numMoves);
-	free(moves);
-	printf("finished gen caps\n");
-
-
-	return EXIT_SUCCESS;
-}

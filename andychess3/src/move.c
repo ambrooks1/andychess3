@@ -5,11 +5,17 @@
  *      Author: andrewbrooks
  */
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include "move.h"
 #include "defs.h"
 #include "util.h"
 
+void printMove(int move) {
+	char *moveStr = moveToString(move);
+	printf( "%s\n", moveStr);
+	free(moveStr);
+}
 /**
 	 *  @return int Piece moving
 	 */
@@ -102,6 +108,21 @@
 			| (type << TYPE_SHIFT) // move type
 			| (ordering << ORDERING_SHIFT); // ordering value
 		return move;
+	}
+	 int createMoveFromString(char str[], int fromType, int capture, int moveType2)
+	//like e2-e4   used in testing only
+	{
+		    printf("start createMoveFromString\n");
+		    const char s[] = "-";
+		    char *token1, *token2;
+
+		    token1 = strtok(str, s);
+		    token2 = strtok(NULL, s);
+
+			int fromIndex=getIndexFromSquare(token1);
+			int toIndex= getIndexFromSquare(token2);
+
+			return createMove(fromType, fromIndex, toIndex, capture, moveType2, 0);
 	}
 	// END createMove
 	/**

@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include "defs.h"
 #include "assert.h"
+#include "move.h"
 
 const U64 bitmap1 = C64(0x8080808080808080);
 const U64 bitmap2 = C64(0x0101010101010101);
@@ -19,6 +20,15 @@ U64 inBetweenWithoutLookup(int sq1, int sq2);
 int bitScanForward(U64 bb) ;
 U64 nortFill(U64 gen) ;
 U64 soutFill(U64 gen) ;
+
+void printMoves(int *moves, int numMoves) {
+
+	for (int i=0; i < numMoves; i++)
+	{
+		printMove(moves[i]);
+		i++;
+	}
+}
 
 int min(int x, int y) {
 	int i = x < y ? x: y ;
