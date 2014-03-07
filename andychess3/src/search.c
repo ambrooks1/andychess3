@@ -120,13 +120,13 @@ void initGlobals() {
 	gs.moveCounter=0;
 }
 
-char *calcBestMove(gameState state, int depthLevel2) {
+void calcBestMove(gameState state, int depthLevel2, char *moveStr) {
 	depthLevel=depthLevel2;
 	initGlobals();
 
 	int move = calcBestMoveAux(state, depthLevel, MIN_INFINITY, MAX_INFINITY);
 	movesMade++;
-	return moveToString(move);
+	moveToString(move, moveStr);
 }
 
 void sort_by_value(MoveInfo arr[], int size) {
@@ -155,25 +155,14 @@ MoveInfo* makeMoveInfo(int* movelist, int cntMoves) {
 	}
 	return mi;
 }
-/*int compare(const void *v1, const void *v2)
-{
-	const MoveInfo *p1 = (MoveInfo *)v1;
-	const MoveInfo *p2 = (MoveInfo *)v2;
 
-	if ( p1->value < p2->value)
-		return -1;
-
-	else if (p1->value > p2->value)
-		return 1;
-
-	else
-		return 0;
-}*/
 void printMovelist(MoveInfo mi[], int cntMoves) {
 	printf("do it**********\n");
+	char s[5];
 	for (int i=0; i < cntMoves; i++)
 	{
-		printf("moveInfo move  %s\n",  moveToString(mi[i].move ));
+		moveToString(mi[i].move, s );
+		printf("moveInfo move  %s\n",  s);
 		printf("moveInfo  value %d\n",  mi[i].value );
 	}
 	printf("done***********\n");
@@ -181,18 +170,18 @@ void printMovelist(MoveInfo mi[], int cntMoves) {
 int calcBestMoveAux(gameState state, int depthlevel, int alpha, int beta)  {
 
 	int    bestMove=0;
-	int* movelist;
+	int movelist[200];
 	bool ownKingInCheck=isInCheck( state.color);
 
 	int cntMoves;
 	if (ownKingInCheck)
-		movelist=generateCheckEvasionMoves(state.color,state, &cntMoves);
+		generateCheckEvasionMoves(state.color,state, movelist, &cntMoves);
 	else
-		movelist=  getAllMoves(state.color, &cntMoves);
+		getAllMoves(state.color, movelist, &cntMoves);
 
 
 	MoveInfo *movelist2 = makeMoveInfo(movelist, cntMoves);
-    printMovelist(movelist2, cntMoves);
+   // printMovelist(movelist2, cntMoves);
 
 	int flags2=state.flags;
 	U64 hash=state.hash;
@@ -223,20 +212,16 @@ int calcBestMoveAux(gameState state, int depthlevel, int alpha, int beta)  {
 		}
 		bestScoreForThisIteration= MAX_INFINITY;
 
-		/*qsort((void *) &movelist2,              // Beginning address of array
-				cntMoves,                           // Number of elements in array
-				sizeof(MoveInfo),              // Size of each element
-				(compfn)compare );                  // Pointer to compare function*/
-
 		sort_by_value(movelist2,cntMoves);
 
-		printMovelist(movelist2, cntMoves);
+		//printMovelist(movelist2, cntMoves);
 
 		for (int i=0; i < cntMoves; i++)
 		{
 			int move = movelist2[i].move;
 
 			int myMoveType = moveType(move);
+			//assert(myMoveType >=1 && myMoveType <= 9);
 			if (!isLegal(state, move, flags2, hash, myMoveType)) continue;
 
 			int searchDepth=currentDepth;
@@ -250,11 +235,15 @@ int calcBestMoveAux(gameState state, int depthlevel, int alpha, int beta)  {
 			movelist2[i].value=score;
 			unmake(move, flags2, hash);
 
-			if (currentDepth >= 6 && search_debug)
+			if (currentDepth >= 6 && search_debug) {
+				char s[5];
+				moveToString(move,s);
 				printf("Level  %d  move %s value %d bestval %d alpha %d beta %d\n",
-						currentDepth, moveToString(move),
-						score,
-						bestScoreForThisIteration,alpha, beta);
+										currentDepth, s,
+										score,
+										bestScoreForThisIteration,alpha, beta);
+			}
+
 
 			if (score < bestScoreForThisIteration) {
 				bestScoreForThisIteration=score;
@@ -290,10 +279,11 @@ int calcBestMoveAux(gameState state, int depthlevel, int alpha, int beta)  {
 }
 void printLoggingInfo(int currentDepth, int bestMove, int score) {
 	char str[LOGGING_STRING_SIZE];
-
+	char s[5];
+	moveToString(bestMove,s);
 	sprintf(str,
 			"bestmove  %s score %d   currentDepth  %d time for this move %lld   Num regular nodes  = %d   numQuiesNodes %d\n",
-			moveToString(bestMove), score,
+			s, score,
 			currentDepth, timeForThisMove, nodesSearched, numQuiesNodes);
 
 	U64 totalNodes = nodesSearched + numQuiesNodes;
@@ -452,7 +442,6 @@ int search(gameState state, int alpha, int beta,
 				tt_hashStore(state.hash, depth, bestMove,bestScore, alpha, beta);
 				// *** alpha and beta are needed to determine meaning of score (bound type)
 			}
-
 			return beta;
 		}
 	}
@@ -501,7 +490,7 @@ int search(gameState state, int alpha, int beta,
 				depth - 2, mate, allowNull, extended, true)   ;
 	}
 
-	int* movelist =0;
+	int movelist[200];
 	int legal=0;
 	int flags2=state.flags;
 	int childrenSearched=0;
@@ -514,7 +503,7 @@ int search(gameState state, int alpha, int beta,
 	}
 
 	bool hashFound=false;
-	int numMoves;
+	int numMoves=0;
 	outerloop:
 	while ( movegen_phase <= lastMovegen_phase)
 	{
@@ -524,10 +513,8 @@ int search(gameState state, int alpha, int beta,
 		case MOVEGEN_HASHMOVE2_PHASE:   // for check evasions
 			if (bestMove != INVALID_MOVE) {
 				if ( isMoveLegal(bestMove)) {
-					free(movelist);
-					movelist = (int *) calloc(2, sizeof(int));
 					movelist[0]=bestMove;
-					movelist[1]=0;
+					numMoves=1;
 					usingHashMove++;
 					hashFound=true;
 				}
@@ -543,24 +530,20 @@ int search(gameState state, int alpha, int beta,
 			break;
 
 		case MOVEGEN_CAPTURES_PHASE:
-			free(movelist);
-			movelist =generateCapturesAndPromotions(state.color, &numMoves);
+			generateCapturesAndPromotions(state.color, movelist, &numMoves);
 			if (movelist != 0 ) {
 				orderMovesCaps(state, movelist, numMoves, hash,depth, bestMove, hashFound);
 			}
 			break;
 
-
 		case MOVEGEN_NONCAPTURES_PHASE:
-			free(movelist);
-			movelist= generateNonCaptures(state.color, &numMoves);
+			generateNonCaptures(state.color, movelist, &numMoves);
 			if (movelist != 0 ) {
 				orderMoves(state, movelist, numMoves, depth, bestMove, hashFound);
 			}
 			break;
 		case MOVEGEN_CHECK_EVASION_PHASE:
-			free(movelist);
-			movelist=generateCheckEvasionMoves(state.color, state, &numMoves);
+			generateCheckEvasionMoves(state.color, state, movelist, &numMoves);
 			if (movelist != 0 ) {
 				orderMoves(state, movelist, numMoves, depth, bestMove, hashFound);
 			}
@@ -596,7 +579,6 @@ int search(gameState state, int alpha, int beta,
 					if((materialEval+fmargin) <= alpha) {
 						futilityPrune++;
 						unmake(move, flags2, hash);
-						//if (!gs2.equals(state)) error(gs2,state, move);
 						continue;
 					}
 				}
@@ -621,7 +603,6 @@ int search(gameState state, int alpha, int beta,
 			childrenSearched++;
 
 			unmake(move, flags2, hash);
-			//if (!gs2.equals(state)) error(gs2,state, move);
 
 			if(score > bestScore)
 			{                  // *** score accounting: remember best (from side-to-move POV)
@@ -646,7 +627,7 @@ int search(gameState state, int alpha, int beta,
 		} // next move
 		movegen_phase++;
 	}  // next phse
-	free(movelist);
+
 	if (legal == 0) {
 		if (! isInCheck( state.color) )  {
 			return 0;
@@ -742,7 +723,8 @@ int quies( gameState state, int alpha, int beta, int depth)
 		alpha = val;
 	}
 	int numMoves;
-	int* movelist = generateCapturesAndPromotions(state.color, &numMoves);
+	int movelist[150];
+	generateCapturesAndPromotions(state.color, movelist,&numMoves);
 	if (movelist==0 ) return val;
 
 	if (turnSEEOn)
@@ -925,6 +907,8 @@ void setUsingTime(bool b) {
 }
 
 int getNextMove(int i, int* moves, int numMoves) {
+	if (numMoves==1)
+		return moves[i];
 	for (int j = i+1; j < numMoves; j++)
 		{
 			if ( moves[j] < moves[i] )

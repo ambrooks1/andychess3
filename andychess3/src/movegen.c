@@ -615,13 +615,11 @@ int getPawnCapturesAndPromotions(int cnt, int* moves, U64 pawns, U64 all,
 	return cnt;
 }
 
-int* generateCheckEvasionMoves(int color,  gameState gs, int *cntMoves) {
+void generateCheckEvasionMoves(int color, gameState gs, int moves[], int *cntMoves) {
 	const int pushDiffs[]                   = {8, -8};
 	// note that we must still verify the legality of the king and pawn moves, after make,
 	//but for the the other generated moves, this is not needed
 	U64 all=gs.bitboard[ALLPIECES];
-
-	int * moves = (int *) calloc(25, sizeof(int));
 	int cnt=0;
 
 	cnt =getMovesForTheKing( cnt,moves,gs.bitboard[WK+color],gs.bitboard[WHITEPIECES+color],WK+color, gs.board, gs);
@@ -631,7 +629,8 @@ int* generateCheckEvasionMoves(int color,  gameState gs, int *cntMoves) {
 
 	int* squares = getCheckEvasionSquares( color, gs);
 	if (squares==0) {
-		return 0;
+		*cntMoves=cnt;
+		return;
 	}
 
 	U64 pawns = gs.bitboard[WP+color];
@@ -668,13 +667,7 @@ int* generateCheckEvasionMoves(int color,  gameState gs, int *cntMoves) {
 	}
 
 	*cntMoves=cnt;
-	if (cnt==0) {
-		return 0;
-	}
-	int * moves2 = (int *) calloc(cnt, sizeof(int));
-	memcpy( moves2, moves, cnt*sizeof(int));
-	free(moves);
-	return moves2;
+
 }
 
 int* getCheckEvasionSquares( int color, gameState gs) {

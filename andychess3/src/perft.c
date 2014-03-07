@@ -67,7 +67,8 @@ void crawl(gameState state, int depth)
 	{
 
 		int numMoves;
-		int * moves = getAllMoves(state.color, &numMoves);
+		int moves[200];
+		getAllMoves(state.color,moves, &numMoves);
 		int flags=state.flags;
 		U64 hash=state.hash;
 

@@ -376,36 +376,34 @@ bool canCastle(int index, U64 allPieces) {
 	return false;
 }
 
-int* getAllMoves( int color, int* cntMoves) {
+void getAllMoves( int color, int moves[], int* cntMoves) {
 	int cntNonCaps, cntCaps;
-	int * noncaps = generateNonCaptures(color, &cntNonCaps);
-	int * caps = generateCapturesAndPromotions(color, &cntCaps);
+	int noncaps[150];
+	generateNonCaptures(color, noncaps, &cntNonCaps);
+	int caps[75];
+	generateCapturesAndPromotions(color, caps, &cntCaps);
 
 	//printf("number of moves: caps %d number of noncaps %d \n",cntCaps,  cntNonCaps);
 	int cnt2 = cntNonCaps+ cntCaps;
 	if (cnt2==0) {
 		*cntMoves=0;
-		return 0;
+		return;
 	}
 
-	int * moves2 = (int *) calloc(cnt2, sizeof(int));
+
 	int j=0;
 	for (int i=0 ; i < cntNonCaps; i++) {
-		moves2[j]=noncaps[i];
+		moves[j]=noncaps[i];
 		j++;
 	}
 	for (int i=0 ; i < cntCaps; i++) {
-		moves2[j]=caps[i];
+		moves[j]=caps[i];
 		j++;
 	}
-
-	free(caps);
-	free(noncaps);
-	*cntMoves=cnt2;
-	return moves2;
+    *cntMoves=j;
 }
-int* generateCapturesAndPromotions(int color, int* cntMoves ) {
-	int * moves = (int *) calloc(75, sizeof(int));
+void generateCapturesAndPromotions(int color, int moves[], int* cntMoves ) {
+
 	int cnt=0;
 	U64 all= gs.bitboard[ALLPIECES];
 	assert(all != 0);
@@ -422,21 +420,13 @@ int* generateCapturesAndPromotions(int color, int* cntMoves ) {
 	cnt = getQueenCaptures(cnt,moves, gs.bitboard[WQ+color],all,enemyPieces,WQ+color, gs.board);
 	cnt = getKingCaptures( cnt,moves, gs.bitboard[WK+color],enemyPieces,WK+color, gs.board);
 	*cntMoves=cnt;
-	if (cnt==0) {
-		return 0;
-	}
-	int * moves2 = (int *) calloc(cnt, sizeof(int));
-	memcpy( moves2, moves, cnt*sizeof(int));
-	free(moves);
-	return moves2;
 }
 
 
-int * generateNonCaptures(int color, int* numMoves ) {     // don't forget to free moves after using
+void generateNonCaptures(int color, int moves[], int* numMoves ) {     // don't forget to free moves after using
 	U64 all= gs.bitboard[ALLPIECES];
     assert(all != 0);
 
-    int * moves = (int *) calloc(125, sizeof(int));
     int cnt=0;
 	cnt = getPawnPushes(cnt, moves, gs.bitboard[WP +gs.color], all, gs.color, WP+gs.color);
 	cnt = getKnightNonCaptures(cnt,moves,gs.bitboard[WN+gs.color], ~all, WN+gs.color);
@@ -469,13 +459,6 @@ int * generateNonCaptures(int color, int* numMoves ) {     // don't forget to fr
 		}
 	}
 	*numMoves=cnt;
-	if (cnt==0) {
-			return 0;
-	}
-	int * moves2 = (int *) calloc(cnt, sizeof(int));
-	memcpy( moves2, moves, cnt*sizeof(int));
-	free(moves);
-	return moves2;
 }
 
 
@@ -567,6 +550,13 @@ void make(int move) {
 	resetCastling[1]=false;
 	int victim;
 	int theMoveType = moveType(move);
+	if (theMoveType < 1 || theMoveType > 9 ) {
+		printf("movetype %d \n", theMoveType);
+		printMove(move);
+		int myPiecemoving = pieceMoving(move);
+		printf("from %d to %d pieceMoving %d\n", from, to, myPiecemoving);
+
+	}
 	assert(theMoveType >= 1 && theMoveType <=9);
 
 	if (theMoveType != doublePawnMove) {
@@ -786,8 +776,9 @@ void make(int move) {
 		break;
 	default :
 		printf("Illegal move type in make");
-
-		printf("%s\n", moveToString(move));
+		char s[5];
+		moveToString(move,s);
+		printf("%s\n",s);
 		printf("movetype %d" , moveType(move));
 		printf("piecemoving %d ", pieceMoving(move));
 		printf("victim %d \n" , capture(move));

@@ -12,9 +12,10 @@
 #include "util.h"
 
 void printMove(int move) {
-	char *moveStr = moveToString(move);
-	printf( "%s\n", moveStr);
-	free(moveStr);
+	char s[5];
+	moveToString(move, s);
+	printf( "%s\n", s);
+
 }
 /**
 	 *  @return int Piece moving
@@ -169,8 +170,8 @@ void printMove(int move) {
 
 			}
 		}
-	char *  moveToString(int move) {
-		char * s = (char *) calloc(5, sizeof(char));
+	void moveToString(int move, char s[]) {
+
 
 		strcpy(s, getSquareFromIndex(fromIndex(move)));
 		strcat(s, getSquareFromIndex(toIndex(move)));
@@ -181,7 +182,7 @@ void printMove(int move) {
 		if (type == simplePromotionQueen || type == capturePromotionQueen) { //promotion
 			s[4] =  promotionConvert(type, pm);
 		}
-		return s;
+
 	}
 
 

@@ -41,7 +41,7 @@
 #define LOGGING_STRING_SIZE				1000
 
 void printMovelist(MoveInfo mi[], int cntMoves) ;
-char *calcBestMove(gameState state, int depthLevel2) ;
+void calcBestMove(gameState state, int depthLevel2, char *moveStr) ;
 int quies( gameState state, int alpha, int beta, int depth);
 bool isLegal (gameState state,const int move, int flags2, U64 hash, int moveType) ;
 int getNextMove(int i, int* moves, int numMoves);
