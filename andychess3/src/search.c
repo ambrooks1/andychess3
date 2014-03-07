@@ -120,11 +120,11 @@ void initGlobals() {
 	gs.moveCounter=0;
 }
 
-void calcBestMove(gameState state, int depthLevel2, char *moveStr) {
+void calcBestMove( int depthLevel2, char *moveStr) {
 	depthLevel=depthLevel2;
 	initGlobals();
 
-	int move = calcBestMoveAux(state, depthLevel, MIN_INFINITY, MAX_INFINITY);
+	int move = calcBestMoveAux(depthLevel, MIN_INFINITY, MAX_INFINITY);
 	movesMade++;
 	moveToString(move, moveStr);
 }
@@ -167,24 +167,24 @@ void printMovelist(MoveInfo mi[], int cntMoves) {
 	}
 	printf("done***********\n");
 }
-int calcBestMoveAux(gameState state, int depthlevel, int alpha, int beta)  {
+int calcBestMoveAux( int depthlevel, int alpha, int beta)  {
 
 	int    bestMove=0;
 	int movelist[200];
-	bool ownKingInCheck=isInCheck( state.color);
+	bool ownKingInCheck=isInCheck( gs.color);
 
 	int cntMoves;
 	if (ownKingInCheck)
-		generateCheckEvasionMoves(state.color,state, movelist, &cntMoves);
+		generateCheckEvasionMoves(gs.color,gs, movelist, &cntMoves);
 	else
-		getAllMoves(state.color, movelist, &cntMoves);
+		getAllMoves(gs.color, movelist, &cntMoves);
 
 
 	MoveInfo *movelist2 = makeMoveInfo(movelist, cntMoves);
    // printMovelist(movelist2, cntMoves);
 
-	int flags2=state.flags;
-	U64 hash=state.hash;
+	int flags2=gs.flags;
+	U64 hash=gs.hash;
 
 	int currentDepth=1;
 
@@ -222,11 +222,11 @@ int calcBestMoveAux(gameState state, int depthlevel, int alpha, int beta)  {
 
 			int myMoveType = moveType(move);
 			//assert(myMoveType >=1 && myMoveType <= 9);
-			if (!isLegal(state, move, flags2, hash, myMoveType)) continue;
+			if (!isLegal( move, flags2, hash, myMoveType)) continue;
 
 			int searchDepth=currentDepth;
 			int score;
-			score = search(state, alpha, beta,  searchDepth,MATE,true,false, false);
+			score = search( alpha, beta,  searchDepth,MATE,true,false, false);
 
 			if (usingTime && stopSearch) {
 				unmake(move, flags2, hash);
@@ -273,7 +273,7 @@ int calcBestMoveAux(gameState state, int depthlevel, int alpha, int beta)  {
 		currentDepth++;
 	}  //end of iteration deepening loop
 	if (search_debug) printLoggingInfo(currentDepth, bestMove, bestScoreForThisIteration);
-	//ponderMove=getPonderMove(state, bestMove);
+	//ponderMove=getPonderMove(gs, bestMove);
 	free (movelist2);
 	return bestMove;
 }
@@ -308,24 +308,24 @@ void printLoggingInfo(int currentDepth, int bestMove, int score) {
 
 	printf("%s",str);
 }
-bool isLegal (gameState state,const int move, int flags2, U64 hash, int moveType) {
+bool isLegal (const int move, int flags2, U64 hash, int moveType) {
 
 	if (moveType == kcastle || moveType == qcastle) {    //castling
-		if (isInCheck( state.color)) {
+		if (isInCheck( gs.color)) {
 			return false;
 		}
 		make(move);
 		// you cannot make a move that puts yourself in check
-		if (isInCheck(  1- state.color)) {
+		if (isInCheck(  1- gs.color)) {
 			unmake(move, flags2, hash);
 
 			return false;
 		}
-		if (isInCheck( 1-state.color)) {
+		if (isInCheck( 1-gs.color)) {
 			unmake(move, flags2, hash);
 			return false;
 		}
-		if (isInCheckAux(  minedBitboards[1-state.color][moveType-2],  state.color) )  {
+		if (isInCheckAux(  minedBitboards[1-gs.color][moveType-2],  gs.color) )  {
 			unmake(move, flags2, hash);
 			return false;
 		}
@@ -333,7 +333,7 @@ bool isLegal (gameState state,const int move, int flags2, U64 hash, int moveType
 	else {
 		make(move);
 		// you cannot make a move that puts yourself in check
-		if (isInCheck(  1- state.color)) {
+		if (isInCheck(  1- gs.color)) {
 			unmake(move, flags2, hash);
 
 			return false;
@@ -375,7 +375,7 @@ In the intermediate node this our alpha becomes the opponent's beta
  *
  */
 
-int search(gameState state, int alpha, int beta,
+int search( int alpha, int beta,
 		int depth, int mate, bool allowNull, bool extended, bool returnBestMove)
 {
 	if (usingTime) {
@@ -390,18 +390,18 @@ int search(gameState state, int alpha, int beta,
 			}
 		}
 	}
-	U64 hash=state.hash;
+	U64 hash=gs.hash;
 
-	/*if (Engine2.isRepetition(state, state.color)) {
+	/*if (Engine2.isRepetition(gs, gs.color)) {
 			return 0;
 		}*/
 	bool foundPv=false;
 
-	bool ownKingInCheck=isInCheck( state.color);
+	bool ownKingInCheck=isInCheck( gs.color);
 
 	if (depth == 0) {
 
-		if ( (extensionsOn) && (!extended) && ( state.promotion || state.seventhRankExtension
+		if ( (extensionsOn) && (!extended) && ( gs.promotion || gs.seventhRankExtension
 				|| isSameSquareRecapture() || ownKingInCheck))
 		{
 
@@ -409,7 +409,7 @@ int search(gameState state, int alpha, int beta,
 			extended = true;
 		}
 		else{
-			return quies(state,alpha,beta,depth);
+			return quies(alpha,beta,depth);
 		}
 	}
 
@@ -428,18 +428,18 @@ int search(gameState state, int alpha, int beta,
 	 *  endgame because of the risk of zugzwang.                     *
 	 ****************************************************************/
 	if  ( turnNullOn && (!ownKingInCheck) && allowNull  && ((depth - 1 - R) > 2) && (!isEndGame())) {
-		state.color = 1-state.color;
-		if ( state.color==BLACK) state.hash = state.hash ^ state.side;
+		gs.color = 1-gs.color;
+		if ( gs.color==BLACK) gs.hash = gs.hash ^ gs.side;
 
-		int nullMoveScore = -search(state, -beta, -beta + 1,depth - 1 - R,  mate-1, false,false,false);
+		int nullMoveScore = -search( -beta, -beta + 1,depth - 1 - R,  mate-1, false,false,false);
 
-		state.color = 1-state.color;
-		if ( state.color==BLACK) state.hash = state.hash ^ state.side;
+		gs.color = 1-gs.color;
+		if ( gs.color==BLACK) gs.hash = gs.hash ^ gs.side;
 
 		if (nullMoveScore >= beta) {
 
 			if (useTT) {
-				tt_hashStore(state.hash, depth, bestMove,bestScore, alpha, beta);
+				tt_hashStore(gs.hash, depth, bestMove,bestScore, alpha, beta);
 				// *** alpha and beta are needed to determine meaning of score (bound type)
 			}
 			return beta;
@@ -460,7 +460,7 @@ int search(gameState state, int alpha, int beta,
 	int materialEval = 0;
 
 	if   ( (depth ==1 && !ownKingInCheck)){
-		materialEval =getEvaluationMaterial(state);
+		materialEval =getEvaluationMaterial(gs);
 
 		if (materialEval + 200  <= alpha){
 			fmargin = 200;
@@ -469,7 +469,7 @@ int search(gameState state, int alpha, int beta,
 	}
 
 	if (useTT) {
-		bool found = tt_probeHash(state.hash);               // *** check if this position was visited before, and if we still have info about it
+		bool found = tt_probeHash(gs.hash);               // *** check if this position was visited before, and if we still have info about it
 
 		if(found) {
 
@@ -486,13 +486,13 @@ int search(gameState state, int alpha, int beta,
 		   | shallow search to find a best move to search first.    |
 		   ---------------------------------------------------------*/
 	if ( (useIID ) && ( alpha != beta+1 ) && ( bestMove == INVALID_MOVE) && (depth > 3) && (allowNull) )  {
-		bestMove = search(state, alpha, beta,
+		bestMove = search( alpha, beta,
 				depth - 2, mate, allowNull, extended, true)   ;
 	}
 
 	int movelist[200];
 	int legal=0;
-	int flags2=state.flags;
+	int flags2=gs.flags;
 	int childrenSearched=0;
 	int movegen_phase= MOVEGEN_HASHMOVE_PHASE;
 	int lastMovegen_phase=MOVEGEN_NONCAPTURES_PHASE;
@@ -530,22 +530,22 @@ int search(gameState state, int alpha, int beta,
 			break;
 
 		case MOVEGEN_CAPTURES_PHASE:
-			generateCapturesAndPromotions(state.color, movelist, &numMoves);
+			generateCapturesAndPromotions(gs.color, movelist, &numMoves);
 			if (movelist != 0 ) {
-				orderMovesCaps(state, movelist, numMoves, hash,depth, bestMove, hashFound);
+				orderMovesCaps( movelist, numMoves, hash,depth, bestMove, hashFound);
 			}
 			break;
 
 		case MOVEGEN_NONCAPTURES_PHASE:
-			generateNonCaptures(state.color, movelist, &numMoves);
+			generateNonCaptures(gs.color, movelist, &numMoves);
 			if (movelist != 0 ) {
-				orderMoves(state, movelist, numMoves, depth, bestMove, hashFound);
+				orderMoves( movelist, numMoves, depth, bestMove, hashFound);
 			}
 			break;
 		case MOVEGEN_CHECK_EVASION_PHASE:
-			generateCheckEvasionMoves(state.color, state, movelist, &numMoves);
+			generateCheckEvasionMoves(gs.color, gs, movelist, &numMoves);
 			if (movelist != 0 ) {
-				orderMoves(state, movelist, numMoves, depth, bestMove, hashFound);
+				orderMoves( movelist, numMoves, depth, bestMove, hashFound);
 			}
 			break;
 		}
@@ -558,12 +558,12 @@ int search(gameState state, int alpha, int beta,
 			}
 			int myMoveType = moveType(move);
 
-			if (!isLegal(state, move, flags2, hash, myMoveType)) {
+			if (!isLegal( move, flags2, hash, myMoveType)) {
 				continue;
 			}
 
 			legal++;
-			bool opponentIsInCheck = isInCheck(state.color);
+			bool opponentIsInCheck = isInCheck(gs.color);
 
 			// Futility pruning,
 			/********************************************************************
@@ -590,12 +590,12 @@ int search(gameState state, int alpha, int beta,
 			int myOrderingValue=orderingValue(move);
 
 			if (do_LMR) {
-				score = lmr_search(state, alpha, beta, depth, mate,
+				score = lmr_search( alpha, beta, depth, mate,
 						extended, legal, opponentIsInCheck, searchDepth,
 						myOrderingValue);
 			}
 			else {
-				score = pv_search(state, alpha, beta, mate, extended,
+				score = pv_search( alpha, beta, mate, extended,
 						foundPv, searchDepth);
 			}
 
@@ -618,7 +618,7 @@ int search(gameState state, int alpha, int beta,
 						numCutoffs++;
 						if ( myMoveType < 10 )   // not a capture or promotion
 						{
-							updateKillerAndHistory(state, depth, move);
+							updateKillerAndHistory( depth, move);
 						}
 						goto outerloop;             // *** beta cutoff: previous ply is refuted by this move, so we can stop here to take that back
 					}
@@ -629,7 +629,7 @@ int search(gameState state, int alpha, int beta,
 	}  // next phse
 
 	if (legal == 0) {
-		if (! isInCheck( state.color) )  {
+		if (! isInCheck( gs.color) )  {
 			return 0;
 		}
 		return -mate;                 // Checkmate.
@@ -642,25 +642,25 @@ int search(gameState state, int alpha, int beta,
 		return bestMove;
 	return bestScore;
 }
-int pv_search(gameState state, int alpha, int beta,
+int pv_search( int alpha, int beta,
 		int mate, bool extended, bool foundPv, int searchDepth) {
 	int score;
 	if (foundPv) {
-		score = -search( state,  -alpha - 1, -alpha, searchDepth,mate - 1, true,extended, false);   // reduced window pv search
+		score = -search(   -alpha - 1, -alpha, searchDepth,mate - 1, true,extended, false);   // reduced window pv search
 		if ((score > alpha) && (score < beta)) // Check for failure.
-			score = -search(state,  -beta, -alpha,searchDepth, mate - 1, true,extended, false);   // do regular search
+			score = -search(  -beta, -alpha,searchDepth, mate - 1, true,extended, false);   // do regular search
 	}
 	else {
-		score = -search(state,  -beta, -alpha,searchDepth, mate - 1, true,extended, false);   // do regular search
+		score = -search(  -beta, -alpha,searchDepth, mate - 1, true,extended, false);   // do regular search
 	}
 	return score;
 }
-int lmr_search(gameState state, int alpha, int beta,
+int lmr_search( int alpha, int beta,
 		int depth, int mate, bool extended, int legal,
 		bool opponentIsInCheck, int searchDepth, int myOrderingValue) {
 	int score;
 	if (legal == 1) {
-		score = -search(state, -beta, -alpha,searchDepth, mate - 1, true,extended, false);        //normal alpha-beta search
+		score = -search( -beta, -alpha,searchDepth, mate - 1, true,extended, false);        //normal alpha-beta search
 	}
 	else
 	{
@@ -668,7 +668,7 @@ int lmr_search(gameState state, int alpha, int beta,
 				&& (myOrderingValue >= CAPTURE_SORT_VALS + 1)
 				&& (!opponentIsInCheck) && ( beta - alpha <= 1))
 		{
-			score = -search( state,  -alpha - 1, -alpha, searchDepth-1,mate - 1, true,extended, false);   // reduced window pv search
+			score = -search(   -alpha - 1, -alpha, searchDepth-1,mate - 1, true,extended, false);   // reduced window pv search
 		}
 		else
 		{
@@ -676,20 +676,20 @@ int lmr_search(gameState state, int alpha, int beta,
 		}
 		if(score > alpha)
 		{
-			score = -search( state,  -alpha - 1, -alpha, searchDepth,mate - 1, true,extended, false);   // reduced window pv search
+			score = -search(   -alpha - 1, -alpha, searchDepth,mate - 1, true,extended, false);   // reduced window pv search
 			if ((score > alpha) && (score < beta)) // Check for failure.
-				score = -search(state,  -beta, -alpha,searchDepth, mate - 1, true,extended, false);   // do regular search
+				score = -search(  -beta, -alpha,searchDepth, mate - 1, true,extended, false);   // do regular search
 		}
 	}
 	return score;
 }
 
-void updateKillerAndHistory(gameState state, int depth, int move) {
+void updateKillerAndHistory( int depth, int move) {
 	int f = fromIndex(move);
 	int t = toIndex(move);
 
-	if (history[state.color][f][t] < HISTORY_POINTS)
-		history[state.color][f][t] ++;
+	if (history[gs.color][f][t] < HISTORY_POINTS)
+		history[gs.color][f][t] ++;
 
 	int killerValue=killer[depth][0];
 
@@ -706,15 +706,15 @@ void updateKillerAndHistory(gameState state, int depth, int move) {
  *  to make sure that only relatively quiet positions           *
  *  with no hanging pieces will be evaluated.                   *
  ***************************************************************/
-int quies( gameState state, int alpha, int beta, int depth)
+int quies(  int alpha, int beta, int depth)
 {
 
 	int val ;
 
 	if (positionalEvalOn)
-		val= getEvaluation(state);
+		val= getEvaluation(gs);
 	else
-		val=getEvaluationMaterial(state);
+		val=getEvaluationMaterial(gs);
 
 	if (val >= beta) {
 		return beta;
@@ -724,16 +724,16 @@ int quies( gameState state, int alpha, int beta, int depth)
 	}
 	int numMoves;
 	int movelist[150];
-	generateCapturesAndPromotions(state.color, movelist,&numMoves);
+	generateCapturesAndPromotions(gs.color, movelist,&numMoves);
 	if (movelist==0 ) return val;
 
 	if (turnSEEOn)
-		orderCapturesBySee(state, movelist, numMoves);
+		orderCapturesBySee( movelist, numMoves);
 	//else
 		//	Util.sort(movelist);
 
 	U64 hash = gs.hash;
-	int flags2=state.flags;
+	int flags2=gs.flags;
 
 	for (int i=0; i < numMoves; i++)
 	{
@@ -742,13 +742,13 @@ int quies( gameState state, int alpha, int beta, int depth)
 		if (move==0) continue;
 		make(move);
 		numQuiesNodes++;
-		if (  isInCheck( 1-state.color) ) {
+		if (  isInCheck( 1-gs.color) ) {
 			unmake(move, flags2, hash);
 			continue;
 			// you cannot put yourself in check
 		}
 
-		val = -quies( state, -beta, -alpha,  depth-1);
+		val = -quies(  -beta, -alpha,  depth-1);
 		unmake(move, flags2, hash);
 		if (val >= beta) {
 			return beta;
@@ -759,7 +759,7 @@ int quies( gameState state, int alpha, int beta, int depth)
 
 		if (!isEndGame() && deltaPruneOn) {
 			int BIG_DELTA = QUEEN_VALUE; // queen value
-			if (state.promotion) BIG_DELTA += (QUEEN_VALUE - PAWN_VALUE) ;
+			if (gs.promotion) BIG_DELTA += (QUEEN_VALUE - PAWN_VALUE) ;
 
 			if ( val < alpha - BIG_DELTA ) {
 				return alpha;
@@ -772,7 +772,7 @@ int quies( gameState state, int alpha, int beta, int depth)
 	return alpha;
 }
 
-void orderMovesCaps(gameState state, int* movelist, int numMoves,  U64 hash, int depth, int hashMove, bool hashFound) {
+void orderMovesCaps( int* movelist, int numMoves,  U64 hash, int depth, int hashMove, bool hashFound) {
 	for (int i=0; i < numMoves; i++)
 	{
 		int move = movelist[i];
@@ -784,7 +784,7 @@ void orderMovesCaps(gameState state, int* movelist, int numMoves,  U64 hash, int
 	}
 }
 
-void orderMoves(gameState state, int* movelist, int numMoves, int depth, int hashMove, bool hashFound) {
+void orderMoves( int* movelist, int numMoves, int depth, int hashMove, bool hashFound) {
 	for (int i=0; i < numMoves; i++)
 	{
 		int move = movelist[i];
@@ -816,7 +816,7 @@ void orderMoves(gameState state, int* movelist, int numMoves, int depth, int has
 				int from =  (move & SQUARE_MASK);
 				int to = ((move >> TO_SHIFT) & SQUARE_MASK);
 				// lets order these from 33 to 127
-				int historyVal = history[state.color][from][to];
+				int historyVal = history[gs.color][from][to];
 				if (historyVal > 0) {
 					if (historyVal > HISTORY_POINTS) historyVal=HISTORY_POINTS;
 					int sortval= min(NO_HISTORY_SORT_VAL,  CAPTURE_SORT_VALS + 2 + (HISTORY_POINTS - historyVal));
@@ -830,7 +830,7 @@ void orderMoves(gameState state, int* movelist, int numMoves, int depth, int has
 	}
 	//Util.sort(movelist);
 }
-void  orderCapturesBySee(gameState state, int* movelist, int numMoves) {
+void  orderCapturesBySee( int* movelist, int numMoves) {
 	int newValue2=INVALID_MOVE;
 
 	for (int i=0; i < numMoves; i++)
@@ -851,7 +851,7 @@ void  orderCapturesBySee(gameState state, int* movelist, int numMoves) {
 			continue;
 		}
 
-		int seeValue=  see(state, move, state.color); //  captures either get a zero value for no good, or a value from 25 to 975
+		int seeValue=  see( move, gs.color); //  captures either get a zero value for no good, or a value from 25 to 975
 		if (seeValue==0) {
 			movelist[i]=0;
 			continue;

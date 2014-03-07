@@ -21,6 +21,7 @@
 #include "gamestate.h"
 #include "timecontrol.h"
 #include "move.h"
+#include "movegen.h"
 
 U64 nodes;
 U64 captures;
@@ -111,7 +112,31 @@ void crawl(gameState state, int depth)
 		}
 	}
 }
+extern gameState gs;
 
+U64 perft2( int depth)
+{
+
+    int move_list[256];
+    int n_moves, i;
+    U64 nodes = 0;
+
+    if (depth == 0) return 1;
+
+    int flags=gs.flags;
+    U64 hash=gs.hash;
+
+    getLegalMoveList( move_list, &n_moves);
+   // getAllMoves(gs.color, move_list, &n_moves);
+
+    for (i = 0; i < n_moves; i++) {
+    	int move = move_list[i];
+    	make(move);
+        nodes += perft2(depth - 1);
+        unmake(move,flags,hash);
+    }
+    return nodes;
+}
 U64 getNodes() {
 	return nodes;
 }

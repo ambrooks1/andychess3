@@ -52,6 +52,7 @@
 #define ROOK_ATTACK 0
 #define BISHOP_ATTACK 1
 
+void  getLegalMoveList( int moves2[], int* numMoves2);
 int getPawnPushes(int cnt, int* moves, U64 pawns, U64 all, int side, int pieceMoving);
 int getKnightNonCaptures(int cnt, int* moves, U64 knights, U64 target,  int fromType);
 int  getBishopNonCaptures(int cnt, int* moves, U64 bishops, U64  all, U64  target, int fromType);

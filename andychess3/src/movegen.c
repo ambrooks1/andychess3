@@ -7,13 +7,17 @@
 
 #include <stdlib.h>
 #include <string.h>
-
+#include <stdio.h>
 #include "defs.h"
 #include "movegen.h"
 #include "move.h"
 #include "util.h"
 #include "magic.h"
 #include "assert.h"
+#include "gamestate.h"
+
+extern gameState gs;
+extern const U64 minedBitboards[2][2];
 
 U64 knightMoveArray[64];
 U64  kingMoveArray[64];
@@ -808,3 +812,52 @@ int* isInCheck2( int color, int piece, int type, int kingIdx, U64 allPieces, gam
 	return 0;
 }
 
+void  getLegalMoveList(int moves2[], int* numMoves2)
+	{
+	    int j=0;
+		int moves[200];
+		int numMoves;
+		//printf("begin; gs.color %d\n", gs.color);
+		getAllMoves(gs.color, moves, &numMoves);
+		//printf("after get all moves; gs.color %d\n", gs.color);
+
+		int flags2=gs.flags;
+		long hash=gs.hash;
+
+		for (int i=0; i < numMoves; i++)
+		{
+			int move=moves[i];
+
+			int myMoveType = moveType(moves[i]);
+			if (myMoveType == kcastle || myMoveType == qcastle) {    //castling
+				if (isInCheck( gs.color)) {
+					continue;
+				}
+			}
+			make(moves[i]);
+			//printf("after make ; gs.color %d\n", gs.color);
+			// you cannot make a move that puts yourself in check
+			if (isInCheck(  1- gs.color)) {
+				//printf("This move puts %d in check \n", 1-gs.color);
+				//printMove(move);
+				unmake(moves[i], flags2, hash);
+
+				continue;
+			}
+
+
+			if (myMoveType == kcastle || myMoveType == qcastle) {    //castling
+				if (isInCheck( 1-gs.color)) {
+					unmake(moves[i], flags2, hash);
+					continue;
+				}
+				if (isInCheckAux(  minedBitboards[1-gs.color][myMoveType-2],  gs.color) )  {
+					unmake(moves[i], flags2, hash);
+					continue;
+				}
+			}
+			unmake(moves[i], flags2, hash);
+			moves2[j++]=moves[i];
+		}
+		*numMoves2=j;
+	}

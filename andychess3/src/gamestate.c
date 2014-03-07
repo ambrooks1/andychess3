@@ -817,7 +817,9 @@ void make(int move) {
 
 	}
 	if (gs.color==BLACK) gs.hash = gs.hash ^  gs.side;
+
 	gs.color=1-gs.color;
+
 }
 void unmake(int move, int flags2, U64 hash2) {
 	int to = ((move >> TO_SHIFT) & SQUARE_MASK);

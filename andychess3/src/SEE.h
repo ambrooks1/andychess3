@@ -8,6 +8,6 @@
 #ifndef SEE_H_
 #define SEE_H_
 
-int see(gameState state, int move, int side);
+int see( int move, int side);
 
 #endif /* SEE_H_ */

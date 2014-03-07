@@ -81,16 +81,16 @@ void testAux(char fen[], int num) {
 	    parseFen(fen);
 	    int numMoves;
 	    int movelist[200];
-		getAllMoves(gs.color, movelist, &numMoves);
+		getLegalMoveList( movelist, &numMoves);
 		printf("number of moves = %d\n", numMoves);
 		assert(num==numMoves);
 
 }
-static void test_get_all_moves() {
+static void test_get_legal_moves() {
 	assert(gs.initialized);
 
-	char fen[] = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1";
-	testAux(fen, 48);
+	//char fen[] = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1";
+	//testAux(fen, 48);
 
 	char fen4[]= "8/3K4/2p5/p2b2r1/5k2/8/8/1q6 b - - 1 67";
 	testAux(fen4, 50);
@@ -136,6 +136,7 @@ static  char *  make_test() {
 }
 
 void illegal_move_test() {    // make sure it picks up illegal moves
+	/*	assert(gs.initialized);
 		printf("illegal_move_test\n");
 		char fen[] = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1";
 		parseFen(fen);
@@ -143,15 +144,16 @@ void illegal_move_test() {    // make sure it picks up illegal moves
 		int move = createMoveFromString("f3-a8", WQ, BR, captureNoPromotion);
 		assert(!(isMoveLegal(move)));
 		printf("finished illegal_move_test\n");
-
+*/
 	}
 
 static  void execute(char *answer) {
+
 		 U64 start = currentTimeMillisecs() ;
 		 search_debug=true;
 		 char moveStr[5];
 		 printf("calc\n");
-		 calcBestMove( gs, depthLevel, moveStr);
+		 calcBestMove(  depthLevel, moveStr);
 		 printf("end calc: move found = %s\n", moveStr);
 		 U64 end =  currentTimeMillisecs() ;
 		 U64 duration = end-start;
@@ -170,6 +172,7 @@ static  void execute(char *answer) {
 	}
 
 void run_search( char *fen, char *answer) {
+	assert(gs.initialized);
 	printf("parseFen\n");
 	parseFen(fen);
 	printf("execute\n");
@@ -218,21 +221,49 @@ static void winAtChess()
 		}
 		//System.out.println("Total " + total);
 	}
+static void checkTest() {
+		printf("starting checkTest\n");
+		char fen[]="rnbq1bnr/ppppkppp/4p3/8/8/BP6/P1PPPPPP/RN1QKBNR b KQkq - 1 1";
+		parseFen(fen);
+
+		bool isBlackInCheck = isInCheckAux( gs.bitboard[BK], WHITE);
+		assert(isBlackInCheck);
+
+		char p[] = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1";
+		parseFen(p);
+
+		isBlackInCheck = isInCheckAux( gs.bitboard[BK], WHITE);
+		assert(!isBlackInCheck);
+
+		bool isWhiteInCheck = isInCheckAux( gs.bitboard[WK],  BLACK);
+		assert(!isWhiteInCheck);
+
+
+	  // String s55 = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R4K1R b kq - 1 1";
+	  // gs = new GameState(s55);
+	   //isWhiteInCheck = gs.isInCheck( gs.bitboard[GameState.WK],GameState.BLACK);
+	   //assertEquals(false, isWhiteInCheck);
+
+
+	  // isWhiteInCheck = gs.isInCheck(GameState.WHITE);
+	  // assertEquals(false, isWhiteInCheck);
+		printf("Finished checkTest\n");
+	}
 int main(void) {
 
 	initializeAll();
 	printf("Finished initializing\n");
-	//illegal_move_test();
-	//test_get_all_moves();
-	//make_test();
-	//check_test();
-	//isLegal_test();
+	checkTest();
+	illegal_move_test();
+	test_get_legal_moves();
+	make_test();
+	check_test();
+	isLegal_test();
+	eval_test();
 
-	//eval_test();
+	run_perft_test();
 
-	//run_perft_test();
-
-	winAtChess();
+	//winAtChess();
 	return EXIT_SUCCESS;
 }
 

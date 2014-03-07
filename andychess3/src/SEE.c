@@ -26,8 +26,10 @@
 #include "movegen.h"
 #include "magic.h"
 #include "util.h"
+#include "gamestate.h"
+extern gameState gs;
 
-void getRegularAttackers(gameState state, int to, U64 allPieces,
+void getRegularAttackers( int to, U64 allPieces,
 		U64 queen[], U64 rook[], U64 bishop[], U64 knight[], int ptr[], int attackers[][16]);
 
 extern U64 knightMoveArray[64];
@@ -63,7 +65,7 @@ void insertXRayAttacker(int side, int attackers[][16], int ptr[],
 		}
 	}
 }
-void getXRayAttackerRook(gameState gs, U64 all, int i, U64 blockers[], int attackingColor, int vertXRayAttacker[][2]) {
+void getXRayAttackerRook( U64 all, int i, U64 blockers[], int attackingColor, int vertXRayAttacker[][2]) {
 	//blockers should be rooks, queens
 	for (int j=0; j < 2; j++) {
 		U64 xray = xrayRookAttacks(all ,blockers[j], i) ;
@@ -94,7 +96,7 @@ void getXRayAttackerRook(gameState gs, U64 all, int i, U64 blockers[], int attac
 
 }
 
-void  getXRayAttackerBishop(gameState gs, U64 all, int i, U64 blockers[], int attackingColor, int diagXRayAttacker[][2]) {
+void  getXRayAttackerBishop( U64 all, int i, U64 blockers[], int attackingColor, int diagXRayAttacker[][2]) {
 	//blockers should be queens, rooks
 
 	for (int j=0; j < 2; j++) {
@@ -136,7 +138,7 @@ int other(int side) {
 
 
 // This is the main routine used by search
-int see(gameState state, int move, int side)  // the side that is moving
+int see( int move, int side)  // the side that is moving
 {
 	// does not work for stack of three XRay attackers/defenders, only for stack of two
 	// does not work for xray bishop/queen behind attacking pawn  (:(
@@ -151,7 +153,7 @@ int see(gameState state, int move, int side)  // the side that is moving
 			500, 975 ,975};
 
 
-	U64 all =  state.bitboard[ALLPIECES];
+	U64 all =  gs.bitboard[ALLPIECES];
 
 	U64 queens[2];
 	U64 bishops[2];
@@ -159,13 +161,13 @@ int see(gameState state, int move, int side)  // the side that is moving
 	U64 knights[2];
 
 	for (int i=0; i < 2; i++) {
-		queens[i] = state.bitboard[WQ+i];
-		rooks[i] = state.bitboard[WR+i];
-		bishops[i] = state.bitboard[WB+i];
-		knights[i] = state.bitboard[WN+i];
+		queens[i] = gs.bitboard[WQ+i];
+		rooks[i] = gs.bitboard[WR+i];
+		bishops[i] = gs.bitboard[WB+i];
+		knights[i] = gs.bitboard[WN+i];
 	}
 
-	//U64 pawns = state.bitboard[WR+side];
+	//U64 pawns = gs.bitboard[WR+side];
 
 	U64 rookBlockers[2][2] = { { rooks[0], queens[0]}, { rooks[1], queens[1]}};
 
@@ -176,14 +178,14 @@ int see(gameState state, int move, int side)  // the side that is moving
 
 	//get regular attackers
 	int ptr[2] = { -1,-1};
-	getRegularAttackers(state, victimSquare, all,
+	getRegularAttackers( victimSquare, all,
 			queens, rooks, bishops, knights, ptr, attackers);
 
 	// move the original attackers to the top of the stack
 	// 'side' is the attacking side
 
 	int from2 =  (move & 63);
-	int attacker = state.board[from2];    //the initial attacker
+	int attacker = gs.board[from2];    //the initial attacker
 	for (int i=0; i <= ptr[side]; i++) {
 		if (attackers[side][i] == attacker) {
 
@@ -201,7 +203,7 @@ int see(gameState state, int move, int side)  // the side that is moving
 	int vertHorizXRayAttacker[2][2];
 
 	for (int i=0; i < 2; i++) {
-		getXRayAttackerBishop(state, all, victimSquare, bishopBlockers[i], i, diagXRayAttacker);
+		getXRayAttackerBishop( all, victimSquare, bishopBlockers[i], i, diagXRayAttacker);
 
 
 		if (diagXRayAttacker[i] != 0) {
@@ -210,7 +212,7 @@ int see(gameState state, int move, int side)  // the side that is moving
 			int blocker2= diagXRayAttacker[i][1];
 			insertXRayAttacker(side, attackers,ptr, attacker2, blocker2);
 		}
-		getXRayAttackerRook(state, all, victimSquare, rookBlockers[i], i, vertHorizXRayAttacker);
+		getXRayAttackerRook( all, victimSquare, rookBlockers[i], i, vertHorizXRayAttacker);
 		if (vertHorizXRayAttacker[i] != 0) {
 			int attacker2= vertHorizXRayAttacker[i][0];
 			int blocker2= vertHorizXRayAttacker[i][1];
@@ -219,7 +221,7 @@ int see(gameState state, int move, int side)  // the side that is moving
 	}
 	//finally, evaluate
 
-	int victim = state.board[to2];      // the initial victim
+	int victim = gs.board[to2];      // the initial victim
 	if (victim==-1)   return 0;
 
 	if (ptr[side]==-1) return 0;
@@ -256,7 +258,7 @@ int see(gameState state, int move, int side)  // the side that is moving
 }
 
 
-void getRegularAttackers(gameState state, int to, U64 allPieces,
+void getRegularAttackers( int to, U64 allPieces,
 		U64 queen[], U64 rook[], U64 bishop[], U64 knight[], int ptr[], int attackers[][16]){
 
 	//int[2][16] attackers;     colors, pieces
@@ -272,7 +274,7 @@ void getRegularAttackers(gameState state, int to, U64 allPieces,
 	U64 knightAttacks = knightMoveArray[to];
 
 	for (int side=0; side < 2; side++) {
-		if ( (kingAttacks & state.bitboard[WK+side]) != 0 )
+		if ( (kingAttacks & gs.bitboard[WK+side]) != 0 )
 			attackers[side][ ++ptr[side]]= WK+side;
 
 		if ((bishopAttacks & queen[side])!= 0)
@@ -295,19 +297,19 @@ void getRegularAttackers(gameState state, int to, U64 allPieces,
 	U64 piece = 1L << to;
 
 	U64 c = ((piece & ~fileA) >> 7 );
-	if ( (c  & state.bitboard[WP]) != 0 )
+	if ( (c  & gs.bitboard[WP]) != 0 )
 		attackers[0][++ptr[0]]= WP;
 
 	U64 d = ((piece & ~fileH) >> 9 );
-	if ( (d  & state.bitboard[WP]) != 0 )
+	if ( (d  & gs.bitboard[WP]) != 0 )
 		attackers[0][++ptr[0]]= WP;
 
 	c = ((piece & ~ fileH ) << 7);   //capture
-	if (( c & state.bitboard[BP]) != 0 )
+	if (( c & gs.bitboard[BP]) != 0 )
 		attackers[1][++ptr[1]]= BP;
 
 	d = ((piece  & ~fileA)  << 9 );  //capture
-	if (( d & state.bitboard[BP]) != 0 )
+	if (( d & gs.bitboard[BP]) != 0 )
 		attackers[1][++ptr[1]]= BP;
 
 }

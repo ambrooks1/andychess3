@@ -15,4 +15,5 @@ U64 getChecks() ;
 U64 getEnPassant();
 U64 getCastles() ;
 U64 getPromotions() ;
+U64 perft2( int depth);
 #endif /* PERFT_H_ */
