@@ -58,6 +58,7 @@ int pv_search( int alpha, int beta,
 bool isCapture(int myMoveType) ;
 int search( int alpha, int beta,
 		int depth, int mate, bool allowNull, bool extended, bool returnBestMove);
+
 void  orderCapturesBySee( int* movelist, int numMoves) ;
 
 #endif /* SEARCH_H_ */

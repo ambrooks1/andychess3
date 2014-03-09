@@ -44,11 +44,11 @@ U64 pst_hits=0, pst_stores=0, pst_probes=0;
      * @param hash  the 64-bit hash of the state
      * @return  the score in centipawns
      */
-     int* pst_getScore(U64 hash) {
-    	 int * retval = (int *) calloc(2, sizeof(int));
+     void pst_getScore(U64 hash, int retval[2]) {
+
          retval[0] = pst[pst_index(hash)].whiteScore;
     	 retval[1] = pst[pst_index(hash)].blackScore;
-    	 return retval;
+
     }
 
 

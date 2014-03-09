@@ -66,6 +66,10 @@ gameState gs = { .initialized=false };
 
 void printMove(int move);
 
+int getEPSquare() {
+		return  gs.flags >>EP_SHIFT;
+	}
+
 bool isEndGame() {
 	return (gs.material[WHITE]  + gs.material[BLACK] < ENDGAME_MATERIAL_VALUE)? true: false;
 }

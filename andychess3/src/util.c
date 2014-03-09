@@ -167,6 +167,11 @@ const char* getSquareFromIndex(int idx) {
 	return squares[idx];
 }
 int getIndexFromSquare ( char *square) {
+	assert(square != NULL);
+
+	unsigned long len = strlen(square);
+	//printf("in getIndexFromSquare; len = %lu\n", len);
+	assert(len==2);
 	for (int i=0; i < 64; i++) {
 		if (strcmp(square, squares[i]) == 0) {
 			return i;
@@ -238,25 +243,25 @@ U64 setBitLong(U64 x, int position)
 	}
 
 	 U64 passedPawnsWhite(U64 whitePawns, U64 blackPawns) {
-		U64 c = ((blackPawns & ~bitmap1) >> 7 );
-		U64 d = ((blackPawns & ~bitmap2) >> 9 );
-		U64 pawnAttacksBlack = c | d;
+				 U64  c = ((blackPawns & ~0x8080808080808080L) >> 7 );
+				 U64  d = ((blackPawns & ~0x0101010101010101L) >> 9 );
+				 U64  pawnAttacksBlack = c | d;
 
-		U64 blackdown  = soutFill(blackPawns | pawnAttacksBlack);
-		U64 whitePassers = whitePawns & ~blackdown;
-		return whitePassers;
+				 U64  blackdown  = soutFill(blackPawns | pawnAttacksBlack);
+				 U64  whitePassers = whitePawns & ~blackdown;
+				return whitePassers;
 		//return popCount(whitePassers);
 	}
 
 	 U64 passedPawnsBlack(U64 whitePawns, U64 blackPawns) {
-		U64 c = ((whitePawns & ~0x0101010101010101L ) << 7);   //capture
-		U64 d = ((whitePawns & ~bitmap2)  << 9 );  //capture
+			    U64 c = ((whitePawns & ~0x0101010101010101L ) << 7);   //capture
+			    U64 d = ((whitePawns & ~0x8080808080808080L)  << 9 );  //capture
 
-		U64 pawnAttacksWhite   = c | d;
+			    U64 pawnAttacksWhite   = c | d;
 
-		U64 whiteup  = nortFill(whitePawns | pawnAttacksWhite);
-		U64 blackPassers = blackPawns & ~whiteup;
-		return blackPassers;
+			    U64 whiteup  = nortFill(whitePawns | pawnAttacksWhite);
+			    U64 blackPassers = blackPawns & ~whiteup;
+				return blackPassers;
 		//return popCount(blackPassers);
 
 	}

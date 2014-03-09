@@ -20,12 +20,38 @@
 #include "perft_test.h"
 #include "timeControl.h"
 #include "search.h"
+#include "make_test.h"
+#include "SEE_test.h"
 
 extern gameState gs;
 extern bool search_debug;
 
 void run_search( char *fen, char *answer) ;
 static const int depthLevel=3;
+
+void hash_test_aux(char moveStr[], int pieceMoving, int victim, int myMoveType) {
+	int move = createMoveFromString(moveStr, pieceMoving, victim, myMoveType);
+	if (move != 0)
+		make(move);
+}
+void hash_test() {
+	printf("hash_test()\n");
+	char startPos[] ="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+	parseFen(startPos);
+	U64 hash = gs.hash;
+
+	hash_test_aux("g1-f3", WN, 0, simple);
+	hash_test_aux("g8-f6", BN, 0, simple);
+	hash_test_aux("f3-g1", WN, 0, simple);
+	hash_test_aux("f6-g8", BN, 0, simple);
+
+	U64 hash2 = gs.hash;
+
+	printf("hash %lld hash2 %lld\n", hash, hash2);
+	assert(hash==hash2);
+
+	printf("end hash_test()\n");
+}
 
 void check_evasion_aux(char *fen, int i) {
 	//printf("fen= %s\n", fen);
@@ -219,41 +245,7 @@ static void test_get_legal_moves() {
 	testAux(pos5, 46);
 }
 
-static  char *  make_test() {
-	assert(gs.initialized);
-	printf("Running make_test\n");
-	char fen[] = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1";
-	parseFen(fen);
-	int numMoves;
-	int movelist[200];
-	generateNonCaptures(gs.color, movelist, &numMoves);
 
-	int saveBoard[64];
-	memcpy(saveBoard, gs.board, sizeof(gs.board));
-
-	U64 saveBitboards[NUMBITBOARDS];
-	memcpy(saveBitboards, gs.bitboard, sizeof(gs.bitboard));
-
-	int flags = gs.flags;
-	U64 hash2 = gs.hash;
-
-	for (int i=0; i < numMoves; i++)
-	{
-		int move = movelist[i];
-		//printf("doing make/unmake on move  %s\n",  moveToString(move));
-		make(move);
-		unmake(move, flags, hash2);
-
-		int comp_val=memcmp(saveBoard, gs.board,  64*sizeof(int));
-		assert(comp_val==0);
-
-		comp_val=memcmp(saveBitboards, gs.bitboard,  NUMBITBOARDS*sizeof(U64));
-		assert( comp_val==0);
-
-		// TODO : compare material positional color flags and hash
-	}
-	return 0;
-}
 
 void illegal_move_test() {    // make sure it picks up illegal moves
 	/*	assert(gs.initialized);
@@ -369,21 +361,30 @@ static void checkTest() {
 	  // assertEquals(false, isWhiteInCheck);
 		printf("Finished checkTest\n");
 	}
+
+void do_eval() {
+	char fen[]="2rr3k/pp3pp1/1nnqbN1p/3pN3/2pP3P/2P3Q1/PPB5/R4RK1 b - h3 0 1";
+	parseFen(fen);
+	getEvaluation();
+}
 int main(void) {
 
 	initializeAll();
 	printf("Finished initializing\n");
-	checkTest();
+	/*checkTest();
 	illegal_move_test();
 	test_get_legal_moves();
-	make_test();
+	make_test_suite();
+	see_test_suite();
 	check_test();
 	isLegal_test();
 	eval_test();
 
 	run_perft_test();
     check_evasion_test();
+    hash_test();*/
 	//winAtChess();
+	do_eval();
 
 	return EXIT_SUCCESS;
 }

@@ -9,5 +9,6 @@
 #define SEE_H_
 
 int see( int move, int side);
+int evaluate2(int side, int victim, int attackers[][16],  int ptr[]);
 
 #endif /* SEE_H_ */

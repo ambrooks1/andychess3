@@ -47,11 +47,11 @@ bool goodKingsideShield(U64 x, int color) {
 
 
 	if (color==0) {
-		for (int i=0; i < sizeof(whiteKSpawnShields); i++ )
+		for (int i=0; i < 5; i++ )
 			if (x == whiteKSpawnShields[i]) return true;
 	}
 	else {
-		for (int i=0; i < sizeof(blackKSpawnShields); i++ )
+		for (int i=0; i < 5; i++ )
 			if (x == blackKSpawnShields[i]) return true;
 	}
 	return false;
@@ -60,11 +60,11 @@ bool goodKingsideShield(U64 x, int color) {
 bool goodQueensideShield(U64 x, int color) {
 
 	if (color==0) {
-		for (int i=0; i < sizeof(whiteQSpawnShields); i++ )
+		for (int i=0; i < 5; i++ )
 			if (x == whiteQSpawnShields[i]) return true;
 	}
 	else {
-		for (int i=0; i < sizeof(blackQSpawnShields); i++ )
+		for (int i=0; i < 5; i++ )
 			if (x == blackQSpawnShields[i]) return true;
 	}
 	return false;
@@ -274,7 +274,7 @@ int endgameBonus(int color, int bonus) {
 	int pawnCountForRank[2];
 
 	for (int i=0; i < 2; i++) {
-		pawnCountForRank[i] = bitScanForward(gs.bitboard[WP+color] & pawnRanks[color][i]);
+		pawnCountForRank[i] = popCount(gs.bitboard[WP+color] & pawnRanks[color][i]);
 		int egPawnPushBonus = pawnCountForRank[i]*pawnBonus[i];
 		//System.out.println("endgame pawn push bonus" + egPawnPushBonus);
 		bonus += egPawnPushBonus;
@@ -326,7 +326,7 @@ int materialDownBonus(int color, int bonus) {
 	return bonus;
 }
 
-int*  pawnStructureBonus() {
+void  pawnStructureBonus(int passedPawnBonus[]) {
 	//passers are more valuable as the material decreases and as their rank increases
 
 	int bonusByRank[]={ 0, 4, 6, 8, 10, 12, 14, 16 };  // for passed pawns
@@ -336,11 +336,10 @@ int*  pawnStructureBonus() {
 
 	U64 hash= gs.bitboard[WP] | gs.bitboard[BP];
 	if ( pst_exists(hash, whitePawns, blackPawns)) {
-		return pst_getScore(hash);
+		pst_getScore(hash, passedPawnBonus);
+		return;
 	}
-
 	int totalMaterial= gs.material[0] + gs.material[1];    //4325 is max , below 3000 is endgame
-
 
 	//PASSED PAWN BONUS
 	int x=16;
@@ -361,15 +360,13 @@ int*  pawnStructureBonus() {
 				}
 
 	U64 passers[2];
+	passers[0]=passers[1]=0;
 
 	passers[0]= passedPawnsWhite(whitePawns, blackPawns);
 
 	passers[1]= passedPawnsBlack(whitePawns, blackPawns);
 
-
-	int * passedPawnBonus = (int *) calloc(2, sizeof(int));
-
-	int y,ppBonus,rank;
+	int y,ppBonus=0,rank;
 
 	for (int i=0; i < 2; i++) {
 
@@ -410,7 +407,7 @@ int*  pawnStructureBonus() {
 			bonus[1] += doubled[1]*doubledPawnPenalty(blackrookCount);*/
 
 	pst_store(hash, whitePawns, blackPawns, bonus[0], bonus[1]);
-	return passedPawnBonus;
+
 }
 
 /*private int  doubledPawnPenalty(int rookCount) {
@@ -421,39 +418,43 @@ int*  pawnStructureBonus() {
 				default : return 0;
 			}
 		}*/
-int getEvaluation(gameState gs) {
+int getEvaluation() {
 
 	int tot[2];
+	int passedPawnBonus[2];
+	passedPawnBonus[0]= passedPawnBonus[1]=0;
 
-	int* passedPawnBonus= pawnStructureBonus();
-	//System.out.println("WHITE PP BONUS : " + passedPawnBonus[0] + " BLACK PP BONUS " + passedPawnBonus[1]);
+	pawnStructureBonus(passedPawnBonus);
+
 	tot[0] = gs.material[0]
-	                     + gs.positional[0]
-	                                     + bonus(0)
-	                                     + passedPawnBonus[0];
+	        + gs.positional[0]
+	        + bonus(0)
+	        + passedPawnBonus[0];
 
 	tot[1] = gs.material[1]
-	                     + gs.positional[1]
-	                                     + bonus(1)
-	                                     + passedPawnBonus[1];
+	       + gs.positional[1]
+	       + bonus(1)
+	       + passedPawnBonus[1];
 	int eval =  tot[gs.color] - tot[1-gs.color];
 
-	free(passedPawnBonus);
+	printf( "white material   %d: black material   %d \n", gs.material[WHITE], gs.material[BLACK]);
+	printf( "white positional %d: black positional %d \n", gs.positional[WHITE], gs.positional[BLACK]);
+	printf( "white bonus      %d: black bonus      %d \n", bonus(WHITE),         bonus(BLACK));
+	printf( "WHITE PP BONUS   %d:  BLACK PP BONUS  %d \n", passedPawnBonus[WHITE], passedPawnBonus[BLACK]);
+
+	printf( "WHITE total   %d:  BLACK total  %d \n", 		tot[WHITE],		tot[BLACK]);
+	printf(" eval %d\n", eval);
 	return eval;
 
 }
-int getEvaluationMaterial(gameState gs) {
+int getEvaluationMaterial() {
 
 	int tot[2];
-
 	tot[0] = gs.material[0];
-
-
 	tot[1] = gs.material[1] ;
 
 	int eval =  tot[gs.color] - tot[1-gs.color];
 	return eval;
-
 }
 
 void initializeEval() {

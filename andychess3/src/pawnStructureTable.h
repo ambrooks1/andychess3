@@ -12,7 +12,7 @@
 
 void pst_store(U64 pawnHash2,U64 whitePawns2, U64 blackPawns2, int whiteScore2, int blackScore2);
 bool pst_exists(U64 hash, U64 whitePawns2, U64 blackPawns2);
-int* pst_getScore(U64 hash);
+int* pst_getScore(U64 hash, int reval[2]);
 int pst_index(U64 hash);
 
 #endif /* PAWNSTRUCTURETABLE_H_ */

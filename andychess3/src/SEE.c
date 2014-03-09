@@ -173,8 +173,12 @@ int see( int move, int side)  // the side that is moving
 
 	U64 bishopBlockers[2][2] = { { bishops[0], queens[0]}, { bishops[1], queens[1]}};
 
-
-	int attackers[2][16];    // colors, pieces
+	 // colors, pieces
+	int attackers[2][16] =
+	{
+			{ -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1},
+			{ -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}
+	};
 
 	//get regular attackers
 	int ptr[2] = { -1,-1};
@@ -199,8 +203,10 @@ int see( int move, int side)  // the side that is moving
 	//put the xRayAttackers into the stack, but behind their associated regular attackers
 	//put the xRayAttackers into the stack, but behind their associated regular attackers
 
-	int diagXRayAttacker[2][2];   //white, black and attacker, blocker
-	int vertHorizXRayAttacker[2][2];
+	 //white, black and attacker, blocker
+	int diagXRayAttacker[2][2] = {  { -1, -1 }, {-1, -1} };
+
+	int vertHorizXRayAttacker[2][2] = {  { -1, -1 }, {-1, -1} };
 
 	for (int i=0; i < 2; i++) {
 		getXRayAttackerBishop( all, victimSquare, bishopBlockers[i], i, diagXRayAttacker);
@@ -256,7 +262,6 @@ int see( int move, int side)  // the side that is moving
 	//Make sure not to use for enpassant capture !!
 
 }
-
 
 void getRegularAttackers( int to, U64 allPieces,
 		U64 queen[], U64 rook[], U64 bishop[], U64 knight[], int ptr[], int attackers[][16]){

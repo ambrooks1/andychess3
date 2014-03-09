@@ -77,18 +77,18 @@ void clearHistory() {
 }
 
 void turnEverythingOn() {
-	useIID=true;
+	useIID=false;
 	useTT=true;
-	do_LMR=true;
-	extensionsOn=true;
-	futilityOn=true;
-	aspirationOn=true;
+	do_LMR=false;
+	extensionsOn=false;
+	futilityOn=false;
+	aspirationOn=false;
 	turnNullOn=true;
 	positionalEvalOn=true;
-	deltaPruneOn=true;
-	orderByKillers=true;
-	orderByHistory=true;
-	turnSEEOn=true;
+	deltaPruneOn=false;
+	orderByKillers=false;
+	orderByHistory=false;
+	turnSEEOn=false;
 }
 
 
@@ -146,14 +146,11 @@ void sort_by_value(MoveInfo arr[], int size) {
     }
 }
 
-MoveInfo* makeMoveInfo(int* movelist, int cntMoves) {
-
-	MoveInfo * mi = (MoveInfo *) calloc(cntMoves, sizeof(MoveInfo));
+void makeMoveInfo(int movelist[], MoveInfo movelist2[],  int cntMoves) {
 	for (int i=0; i < cntMoves; i++) {
-		mi[i].move = movelist[i];
-		mi[i].value=0;
+		movelist2[i].move = movelist[i];
+		movelist2[i].value=0;
 	}
-	return mi;
 }
 
 void printMovelist(MoveInfo mi[], int cntMoves) {
@@ -167,9 +164,8 @@ void printMovelist(MoveInfo mi[], int cntMoves) {
 	}
 	printf("done***********\n");
 }
-int calcBestMoveAux( int depthlevel, int alpha, int beta)  {
 
-	int    bestMove=0;
+void getTheMovelist(MoveInfo movelist2[], int *cntMoves2) {
 	int movelist[200];
 	bool ownKingInCheck=isInCheck( gs.color);
 
@@ -179,9 +175,19 @@ int calcBestMoveAux( int depthlevel, int alpha, int beta)  {
 	else
 		getAllMoves(gs.color, movelist, &cntMoves);
 
+	makeMoveInfo(movelist, movelist2, cntMoves);
 
-	MoveInfo *movelist2 = makeMoveInfo(movelist, cntMoves);
-   // printMovelist(movelist2, cntMoves);
+	*cntMoves2=cntMoves;
+}
+
+int calcBestMoveAux( int depthlevel, int alpha, int beta)  {
+
+	int    bestMove=0;
+	int 	cntMoves;
+	MoveInfo movelist[200];
+
+	getTheMovelist(movelist, &cntMoves);
+    printMovelist(movelist, cntMoves);
 
 	int flags2=gs.flags;
 	U64 hash=gs.hash;
@@ -212,16 +218,16 @@ int calcBestMoveAux( int depthlevel, int alpha, int beta)  {
 		}
 		bestScoreForThisIteration= MAX_INFINITY;
 
-		sort_by_value(movelist2,cntMoves);
+		sort_by_value(movelist,cntMoves);
 
 		//printMovelist(movelist2, cntMoves);
 
 		for (int i=0; i < cntMoves; i++)
 		{
-			int move = movelist2[i].move;
+			int move = movelist[i].move;
 
 			int myMoveType = moveType(move);
-			//assert(myMoveType >=1 && myMoveType <= 9);
+			assert(myMoveType >=1 && myMoveType <= 9);
 			if (!isLegal( move, flags2, hash, myMoveType)) continue;
 
 			int searchDepth=currentDepth;
@@ -232,10 +238,10 @@ int calcBestMoveAux( int depthlevel, int alpha, int beta)  {
 				unmake(move, flags2, hash);
 				break;
 			}
-			movelist2[i].value=score;
+			movelist[i].value=score;
 			unmake(move, flags2, hash);
 
-			if (currentDepth >= 6 && search_debug) {
+			if (search_debug) {
 				char s[5];
 				moveToString(move,s);
 				printf("Level  %d  move %s value %d bestval %d alpha %d beta %d\n",
@@ -243,7 +249,6 @@ int calcBestMoveAux( int depthlevel, int alpha, int beta)  {
 										score,
 										bestScoreForThisIteration,alpha, beta);
 			}
-
 
 			if (score < bestScoreForThisIteration) {
 				bestScoreForThisIteration=score;
@@ -274,7 +279,7 @@ int calcBestMoveAux( int depthlevel, int alpha, int beta)  {
 	}  //end of iteration deepening loop
 	if (search_debug) printLoggingInfo(currentDepth, bestMove, bestScoreForThisIteration);
 	//ponderMove=getPonderMove(gs, bestMove);
-	free (movelist2);
+
 	return bestMove;
 }
 void printLoggingInfo(int currentDepth, int bestMove, int score) {
@@ -375,6 +380,7 @@ In the intermediate node this our alpha becomes the opponent's beta
  *
  */
 
+
 int search( int alpha, int beta,
 		int depth, int mate, bool allowNull, bool extended, bool returnBestMove)
 {
@@ -431,7 +437,8 @@ int search( int alpha, int beta,
 		gs.color = 1-gs.color;
 		if ( gs.color==BLACK) gs.hash = gs.hash ^ gs.side;
 
-		int nullMoveScore = -search( -beta, -beta + 1,depth - 1 - R,  mate-1, false,false,false);
+		int nullMoveScore
+		    = -search( -beta, -beta + 1,depth - 1 - R,  mate-1, false,false,false);
 
 		gs.color = 1-gs.color;
 		if ( gs.color==BLACK) gs.hash = gs.hash ^ gs.side;
@@ -486,8 +493,8 @@ int search( int alpha, int beta,
 		   | shallow search to find a best move to search first.    |
 		   ---------------------------------------------------------*/
 	if ( (useIID ) && ( alpha != beta+1 ) && ( bestMove == INVALID_MOVE) && (depth > 3) && (allowNull) )  {
-		bestMove = search( alpha, beta,
-				depth - 2, mate, allowNull, extended, true)   ;
+		//bestMove = search( alpha, beta,
+		//		depth - 2, mate, allowNull, extended, true)   ;
 	}
 
 	int movelist[200];

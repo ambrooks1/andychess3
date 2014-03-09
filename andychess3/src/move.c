@@ -113,12 +113,14 @@ void printMove(int move) {
 	 int createMoveFromString(char str[], int fromType, int capture, int moveType2)
 	//like e2-e4   used in testing only
 	{
-		    printf("start createMoveFromString\n");
+		   // printf("start createMoveFromString\n");
 		    const char s[] = "-";
 		    char *token1, *token2;
 
 		    token1 = strtok(str, s);
 		    token2 = strtok(NULL, s);
+		    if (token1 == NULL || token2 == NULL)
+		    	return 0;
 
 			int fromIndex=getIndexFromSquare(token1);
 			int toIndex= getIndexFromSquare(token2);

@@ -10,6 +10,7 @@
 
 #include <stdbool.h>
 
+int getEPSquare();
 void parseFen2 ( char fen[]);
 void printBoard();
 void initializeAll();
