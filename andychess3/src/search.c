@@ -175,7 +175,7 @@ int calcBestMoveAux( int depthlevel, int alpha, int beta)  {
 
 	int cntMoves;
 	if (ownKingInCheck)
-		generateCheckEvasionMoves(gs.color,gs, movelist, &cntMoves);
+		generateCheckEvasionMoves(gs.color, movelist, &cntMoves);
 	else
 		getAllMoves(gs.color, movelist, &cntMoves);
 
@@ -543,7 +543,7 @@ int search( int alpha, int beta,
 			}
 			break;
 		case MOVEGEN_CHECK_EVASION_PHASE:
-			generateCheckEvasionMoves(gs.color, gs, movelist, &numMoves);
+			generateCheckEvasionMoves(gs.color, movelist, &numMoves);
 			if (movelist != 0 ) {
 				orderMoves( movelist, numMoves, depth, bestMove, hashFound);
 			}

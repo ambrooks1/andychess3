@@ -10,6 +10,7 @@
 
 #include <stdbool.h>
 
+void parseFen2 ( char fen[]);
 void printBoard();
 void initializeAll();
 void parseFen( char fen[]);

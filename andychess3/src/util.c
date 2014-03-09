@@ -292,3 +292,30 @@ U64 setBitLong(U64 x, int position)
 		   return halfOpenOrOpenFile(bpawns)
 		        ^ openFiles(wpawns, bpawns);
 	}
+
+void sort(int array[], int n) {
+	 	int c, d, swap;
+	 	for (c = 0 ; c < ( n - 1 ); c++){
+	 		for (d = 0 ; d < n - c - 1; d++)
+	 		{
+	 			if (array[d] > array[d+1]) /* For decreasing order use < */
+	 			{
+	 				swap       = array[d];
+	 				array[d]   = array[d+1];
+	 				array[d+1] = swap;
+	 			}
+	 		}
+	 	}
+	 }
+
+int dedup(int arr[], int size) {    //removes duplicates from int array
+	 	sort(arr, size);
+	 	int curr = 0, next = 0;
+	 	while (next < size) {
+	 		while (next < size && arr[next] == arr[curr])
+	 			next++;
+	 		if (next < size)
+	 			arr[++curr] = arr[next++];
+	 	}
+	 	return size ? curr+1 : 0;
+}

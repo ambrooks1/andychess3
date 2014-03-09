@@ -619,7 +619,7 @@ int getPawnCapturesAndPromotions(int cnt, int* moves, U64 pawns, U64 all,
 	return cnt;
 }
 
-void generateCheckEvasionMoves(int color, gameState gs, int moves[], int *cntMoves) {
+void generateCheckEvasionMoves(int color, int moves[], int *cntMoves) {
 	const int pushDiffs[]                   = {8, -8};
 	// note that we must still verify the legality of the king and pawn moves, after make,
 	//but for the the other generated moves, this is not needed
@@ -670,8 +670,9 @@ void generateCheckEvasionMoves(int color, gameState gs, int moves[], int *cntMov
 		i++;
 	}
 
-	*cntMoves=cnt;
-
+	//*cntMoves=cnt;
+	int cnt3= dedup(moves,cnt);
+	*cntMoves=cnt3;
 }
 
 int* getCheckEvasionSquares( int color, gameState gs) {
@@ -811,7 +812,53 @@ int* isInCheck2( int color, int piece, int type, int kingIdx, U64 allPieces, gam
 	}
 	return 0;
 }
+void  getLegalCheckEvasions(int moves2[], int* numMoves2)
+	{
+	    int j=0;
+		int moves[200];
+		int numMoves;
+		//printf("begin getLegalCheckEvasions; gs.color %d\n", gs.color);
+		generateCheckEvasionMoves(gs.color, moves, &numMoves);
+		//printf("after get all moves; gs.color %d\n", gs.color);
 
+		int flags2=gs.flags;
+		long hash=gs.hash;
+
+		for (int i=0; i < numMoves; i++)
+		{
+			int myMoveType = moveType(moves[i]);
+			if (myMoveType == kcastle || myMoveType == qcastle) {    //castling
+				if (isInCheck( gs.color)) {
+					continue;
+				}
+			}
+			make(moves[i]);
+			//printf("after make ; gs.color %d\n", gs.color);
+			// you cannot make a move that puts yourself in check
+			if (isInCheck(  1- gs.color)) {
+				//printf("This move puts %d in check \n", 1-gs.color);
+				//printMove(move);
+				unmake(moves[i], flags2, hash);
+
+				continue;
+			}
+
+
+			if (myMoveType == kcastle || myMoveType == qcastle) {    //castling
+				if (isInCheck( 1-gs.color)) {
+					unmake(moves[i], flags2, hash);
+					continue;
+				}
+				if (isInCheckAux(  minedBitboards[1-gs.color][myMoveType-2],  gs.color) )  {
+					unmake(moves[i], flags2, hash);
+					continue;
+				}
+			}
+			unmake(moves[i], flags2, hash);
+			moves2[j++]=moves[i];
+		}
+		*numMoves2=j;
+	}
 void  getLegalMoveList(int moves2[], int* numMoves2)
 	{
 	    int j=0;
@@ -826,8 +873,6 @@ void  getLegalMoveList(int moves2[], int* numMoves2)
 
 		for (int i=0; i < numMoves; i++)
 		{
-			int move=moves[i];
-
 			int myMoveType = moveType(moves[i]);
 			if (myMoveType == kcastle || myMoveType == qcastle) {    //castling
 				if (isInCheck( gs.color)) {

@@ -67,28 +67,28 @@ gameState gs = { .initialized=false };
 void printMove(int move);
 
 bool isEndGame() {
-		  return (gs.material[WHITE]  + gs.material[BLACK] < ENDGAME_MATERIAL_VALUE)? true: false;
+	return (gs.material[WHITE]  + gs.material[BLACK] < ENDGAME_MATERIAL_VALUE)? true: false;
 }
 
 bool isSameSquareRecapture() {
-		    if (gs.moveCounter < 2)  return false;
-			int lastVictim     = gs.capturedPieces[gs.moveCounter -1];
-			int previousVictim = gs.capturedPieces[gs.moveCounter -2];
-			if (lastVictim == -1 || previousVictim == -1 ) return false;
-			int value1 = valueMap[lastVictim];
-			int value2 = valueMap[previousVictim];
-			if ( value1 != value2)  return false;
-			int move1 = gs.moveHistory[gs.moveCounter -1];
-			int move2 = gs.moveHistory[gs.moveCounter -2];
+	if (gs.moveCounter < 2)  return false;
+	int lastVictim     = gs.capturedPieces[gs.moveCounter -1];
+	int previousVictim = gs.capturedPieces[gs.moveCounter -2];
+	if (lastVictim == -1 || previousVictim == -1 ) return false;
+	int value1 = valueMap[lastVictim];
+	int value2 = valueMap[previousVictim];
+	if ( value1 != value2)  return false;
+	int move1 = gs.moveHistory[gs.moveCounter -1];
+	int move2 = gs.moveHistory[gs.moveCounter -2];
 
-			int toSquare1 =  ((move1 >> TO_SHIFT) & SQUARE_MASK);
-			int toSquare2 =  ((move2 >> TO_SHIFT) & SQUARE_MASK);
+	int toSquare1 =  ((move1 >> TO_SHIFT) & SQUARE_MASK);
+	int toSquare2 =  ((move2 >> TO_SHIFT) & SQUARE_MASK);
 
-		    if (toSquare1==toSquare2) {
-		    	return true;
-		    }
-		    return false;
+	if (toSquare1==toSquare2) {
+		return true;
 	}
+	return false;
+}
 
 //**********************************************************************
 void initializeFlags() {
@@ -183,6 +183,45 @@ int setEnPassantValue(int irrevState, int value) {
 	return (irrevState | (value << EP_SHIFT)); // Change the value and return the new irrev state integer
 }
 //**********************************************************************
+
+void convertFenRowsToBoard(char* rows[8]) {
+
+	int index=0;
+	char *fenRow;
+
+	//printf("convertRowsToBoard\n");
+	for (int i=0; i < 8; i++) {
+
+		fenRow = rows[i];
+		if (fenRow[0] == 0) continue;
+
+		printf("fenRow %s\n", fenRow);
+		int length=strlen(fenRow);
+		assert(length>0);
+
+		// printf("GO %s\n", p);
+
+		//char* c = p;
+		for (int j= 0; j < length; j++)
+		{
+			int fenChar = fenRow[j] ;  // the character '1' is int 49 for example, in the ascii table
+			// printf("m=%c\n", m);
+			if (isalpha(fenChar)) {
+				gs.board[index++] = convertPiece(fenChar);
+			}
+			else{
+				if (isdigit(fenChar)) {
+					int ia = fenChar - '0';
+					for (int k=0; k< ia; k++ )
+						gs.board[index++]= EMPTY;
+				}
+			}
+
+		} //end while
+	}  //end for
+	//printf("Finished convertRowsToBoard\n");
+}
+//**********************************************************************
 void fenToCastlingPrivilege(char *castlingS) {
 	for (int i=0; i < 4; i++)
 		gs.flags =  clearBit(gs.flags,i);
@@ -208,120 +247,110 @@ void fenToCastlingPrivilege(char *castlingS) {
 }
 
 //**********************************************************************
-void convertRowsToBoard(char* rows[8]) {
-
-	int index=0;
-	//printf("convertRowsToBoard\n");
-	for (int i=0; i < 8; i++) {
-
-		char *p = rows[i];
-		// printf("GO %s\n", p);
-
-		char* c = p;
-		while (*c){
-			int m = *c;    // the character '1' is int 49 for example, in the ascii table
-
-			int ia = m - '0';
-			// printf("m=%c\n", m);
-			if (isalpha(m)) {
-				gs.board[index++] = convertPiece(*c);
-			}
-			else{
-				if (isdigit(m)) {
-					for (int k=0; k< ia; k++ )
-						gs.board[index++]= EMPTY;
-				}
-			}
-			c++;
-		} //end while
-	}  //end for
-	//printf("Finished convertRowsToBoard\n");
-}
-//**********************************************************************
-
-
-void parseFen( char fen[]) {
-    assert(gs.initialized);
+void parseFen ( char fen[]) {
+	assert(fen[0] != '\0') ;
+	assert(gs.initialized);
+	memset(gs.board,EMPTY,sizeof(gs.board));
 
 	gs.positional[WHITE]=0;
 	gs.positional[BLACK]=0;
 
-	char *cp = strdup(fen);
-	char *ch, *ch2;
+	for (int i=0; i < 4; i++)
+		gs.flags =  clearBit(gs.flags,i);
 
-	char* rows[8];
+	int k;
+	int fenLength= strlen(fen);
+	char col = 0;
+	char row = 0;
+	int state=0;
+	char enPassant[2];
+	int epIdx=0;
+	for (int i=0; i < fenLength; i++) {
+		//printf("fen char %c \n", fen[i]);
 
-	//printf("Split \"%s\"\n", fen);
+		switch(state) {
+			case 0:   //parse the board
+			switch( fen[i] ) {
+				case 'K':case 'Q':case 'R':case 'B':
+				case 'N':case 'P':case 'k':case 'q':
+				case 'r':case 'b':case 'n':case 'p':
+					k = convertPiece(fen[i]);
+					gs.board[row * 8 + col]=k;
+					col++;
+					break;
 
-	ch = strtok(fen, " ");
-	int i=0;
-	while (ch != NULL) {
-		if (i==0)
-		{
-			int j=0;
-			ch2 = strtok(ch, "\\/");
-			while ( ch2 != NULL) {
-				//printf("%s\n", ch2);
-				rows[j++]=ch2;
-				ch2 = strtok(NULL, "\\/");
-			}
+				case '/':
+					row++;
+					col=0;
+					break;
+				case '1': col+=1; break;
+				case '2': col+=2; break;
+				case '3': col+=3; break;
+				case '4': col+=4; break;
+				case '5': col+=5; break;
+				case '6': col+=6; break;
+				case '7': col+=7; break;
+				case '8': col+=8; break;
+				case ' ': state++; break;
+			};
+			break;
+
+			case 1:    //parse the b or w
+				switch( fen[i] )
+				{
+					case 'b':  gs.color=BLACK; break;
+					case 'w' : gs.color=WHITE; break;
+					case ' ' : state++; break;
+				}
+			break;
+
+			case 2 :
+
+				switch( fen[i] )
+					{
+					case 'K': gs.flags = setBit(gs.flags,WKSIDE); break;
+					case 'Q' :gs.flags = setBit(gs.flags,WQSIDE); break;
+					case 'k' :gs.flags = setBit(gs.flags,BKSIDE); break;
+					case 'q' :gs.flags = setBit(gs.flags,BQSIDE); break;
+					case '-': state++; break;
+					case ' ': state++; break;
+				    }
+			break;
+			case 3:
+				//printf("\n en passant \n");
+
+				switch( fen[i] )
+				{
+					case '-':
+						gs.flags = setEnPassantValue(gs.flags, 0);
+						state++;
+						break;
+					case ' ': state++; break;
+					default :
+						if (isalnum(fen[i])) {
+							if (epIdx==0) {
+								enPassant[epIdx++]=fen[i];
+							}
+							else {
+								if (epIdx==1) {
+									enPassant[epIdx++]=fen[i];
+									int index =  63 - getIndexFromSquare(enPassant);
+									//printf("\n en passant index %d\n", index);
+									gs.flags = setEnPassantValue(gs.flags, index);
+								}
+							}
+						}
+						break;
+				}
+			    // like e3 or d6
+			break;
+
+			default:
+			break;
 		}
-
-		ch = strtok(NULL, " ");
-		i++;
 	}
-	// printf("Split \"%s\"\n", cp);
-
-	i=0;
-
-	ch = strtok(cp, " ");
-	while (ch != NULL) {
-
-		/*  if (i > 0 ) {
-			  printf("%s\n", ch);
-		  }*/
-
-		switch(i) {
-		case 1:       // color to play w or b
-			// printf("\n color %s\n", ch);
-
-			if (strcmp(ch, "w")==0)  //true
-			{
-				// printf("color is white\n");
-				gs.color=WHITE;
-			}
-			else {
-				//printf("color is black\n");
-				gs.color=BLACK;
-			}
-			break;
-		case 2:
-			//printf("\n castling privileges %s\n", ch);
-			fenToCastlingPrivilege(ch);
-			break;
-		case 3:
-			//printf("\n en passant %s\n", ch);
-			if (strcmp("-", ch) == 0) {  //true
-				gs.flags = setEnPassantValue(gs.flags, 0);
-			}
-			else {     // like e3 or d6
-				int index =  63 - getIndexFromSquare(ch);
-				// printf("\n en passant index %d\n", index);
-				gs.flags = setEnPassantValue(gs.flags, index);
-			}
-			break;
-		}
-
-		ch = strtok(NULL, " ");
-		i++;
-	}
-
-	convertRowsToBoard(  rows);
-	//printf("Doing setAllBitboards\n");
+	//printBoard();
 	setAllBitboards();
-	//printf("Finished Doing setAllBitboards\n");
-
-
 	gs.material[WHITE]=materialValue(WHITE);
 
 	gs.material[BLACK]=materialValue(BLACK);
@@ -339,13 +368,10 @@ void parseFen( char fen[]) {
 		}
 		//printf("whitepositional %d blackpositional %d\n", gs.positional[WHITE], gs.positional[BLACK]);
 	}
-
 	//printf("Doing calc hash\n");
 	gs.hash= calcHash();
-	//printf("Finished Doing calc hash\n");
-	//printf("Finished parse fen\n");
-}
 
+}
 //**********************************************************************
 int materialValue(int color) {      // only used for initializing a state  , not used after make
 	int pawnVal =   PAWN_VALUE * ( popCount(gs.bitboard[WP+color])  );
@@ -400,7 +426,7 @@ void getAllMoves( int color, int moves[], int* cntMoves) {
 		moves[j]=caps[i];
 		j++;
 	}
-    *cntMoves=j;
+	*cntMoves=j;
 }
 void generateCapturesAndPromotions(int color, int moves[], int* cntMoves ) {
 
@@ -425,9 +451,9 @@ void generateCapturesAndPromotions(int color, int moves[], int* cntMoves ) {
 
 void generateNonCaptures(int color, int moves[], int* numMoves ) {     // don't forget to free moves after using
 	U64 all= gs.bitboard[ALLPIECES];
-    assert(all != 0);
+	assert(all != 0);
 
-    int cnt=0;
+	int cnt=0;
 	cnt = getPawnPushes(cnt, moves, gs.bitboard[WP +gs.color], all, gs.color, WP+gs.color);
 	cnt = getKnightNonCaptures(cnt,moves,gs.bitboard[WN+gs.color], ~all, WN+gs.color);
 	cnt = getBishopNonCaptures(cnt,moves,gs.bitboard[WB+gs.color],all, ~all, WB+gs.color);
@@ -1107,46 +1133,46 @@ bool isMoveLegal ( int move) {
 	int epSquare2;
 	switch(moveType2) {
 	case (simple) :
-			 if (gs.board[to] != EMPTY) return false;
+					 if (gs.board[to] != EMPTY) return false;
 	break;
 
 	case(singlePawnMove) :
-			 if (gs.board[to] != EMPTY) return false;
+					 if (gs.board[to] != EMPTY) return false;
 	break;
 
 	case(doublePawnMove) :
 
-			  if (gs.board[to+ offset[color2]] != EMPTY) return false;
+					  if (gs.board[to+ offset[color2]] != EMPTY) return false;
 	if (gs.board[to] != EMPTY) return false;
 	break;
 
 	case (kcastle)  :
 
-			if (! (canCastle( kingside[color2], gs.bitboard[ALLPIECES])  ))  return false;
+					if (! (canCastle( kingside[color2], gs.bitboard[ALLPIECES])  ))  return false;
 	break;
 
 	case (qcastle)  :
 
-		 	if (! (canCastle( queenside[color2], gs.bitboard[ALLPIECES])  ))  return false;
+		 			if (! (canCastle( queenside[color2], gs.bitboard[ALLPIECES])  ))  return false;
 	break;
 
 	case(simplePromotionQueen) :
-			if (gs.board[to] != EMPTY) return false;
+					if (gs.board[to] != EMPTY) return false;
 	break;
 
 	case(captureNoPromotion) :
-			if (victim < 0 || victim > 9) return false;
+					if (victim < 0 || victim > 9) return false;
 	if (gs.board[to] != victim) return false;
 	break;
 
 	case ( capturePromotionQueen) :
-			 						if (victim < 0 || victim > 9) return false;
+			 								if (victim < 0 || victim > 9) return false;
 	if (gs.board[to] != victim) return false;
 	break;
 
 	case ( epCapture) :
 
-		epSquare2 = from + offset[color2];
+				epSquare2 = from + offset[color2];
 	if (gs.board[epSquare2] != victim) return false;
 	break;
 	default: return false;   //weird movetype

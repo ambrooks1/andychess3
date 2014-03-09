@@ -52,6 +52,7 @@
 #define ROOK_ATTACK 0
 #define BISHOP_ATTACK 1
 
+void  getLegalCheckEvasions(int moves2[], int* numMoves2);
 void  getLegalMoveList( int moves2[], int* numMoves2);
 int getPawnPushes(int cnt, int* moves, U64 pawns, U64 all, int side, int pieceMoving);
 int getKnightNonCaptures(int cnt, int* moves, U64 knights, U64 target,  int fromType);
@@ -69,6 +70,6 @@ int  getQueenCaptures(int cnt, int* moves, U64 queens, U64  all, U64  target, in
 int getKingCaptures(int cnt, int* moves, U64 king, U64 target,  int fromType, int* board);
 
 void initializeMoveGen();
-void generateCheckEvasionMoves(int color, gameState gs, int moves[], int *cntMoves);
+void generateCheckEvasionMoves(int color, int moves[], int *cntMoves);
 
 #endif /* MOVEGEN_H_ */
