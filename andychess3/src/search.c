@@ -77,17 +77,17 @@ void clearHistory() {
 }
 
 void turnEverythingOn() {
-	useIID=false;
+	useIID=true;
 	useTT=true;
-	do_LMR=false;
-	extensionsOn=false;
-	futilityOn=false;
-	aspirationOn=false;
+	do_LMR=true;
+	extensionsOn=true;
+	futilityOn=true;
+	aspirationOn=true;
 	turnNullOn=true;
 	positionalEvalOn=true;
-	deltaPruneOn=false;
-	orderByKillers=false;
-	orderByHistory=false;
+	deltaPruneOn=true;
+	orderByKillers=true;
+	orderByHistory=true;
 	turnSEEOn=false;
 }
 
@@ -130,22 +130,40 @@ void calcBestMove( int depthLevel2, char *moveStr) {
 }
 
 void sort_by_value(MoveInfo arr[], int size) {
-    // note the size-1.  The last one will be in order
-    for (int i = 0; i < size-1; i++) {
-        int min = i;
-        for (int j = i+1; j < size; j++) {
-            if (arr[j].value < arr[min].value) {
-                min = j;
-            }
-        }
-        if (min != i) { // if you're not changing position, don't swap
-            MoveInfo temp = arr[i];
-            arr[i] = arr[min];
-            arr[min] = temp;
-        }
-    }
+	// note the size-1.  The last one will be in order
+	for (int i = 0; i < size-1; i++) {
+		int min = i;
+		for (int j = i+1; j < size; j++) {
+			if (arr[j].value < arr[min].value) {
+				min = j;
+			}
+		}
+		if (min != i) { // if you're not changing position, don't swap
+			MoveInfo temp = arr[i];
+			arr[i] = arr[min];
+			arr[min] = temp;
+		}
+	}
 }
+void sorter(int arr[], int size) {
+	// note the size-1.  The last one will be in order
+	for (int i = 0; i < size-1; i++) {
+		int min = i;
+		for (int j = i+1; j < size; j++) {
+			int myOrderingValue =  orderingValue(arr[j]);
+			int myOrderingValue2 = orderingValue(arr[min]);
 
+			if (myOrderingValue < myOrderingValue2) {
+				min = j;
+			}
+		}
+		if (min != i) { // if you're not changing position, don't swap
+			int temp = arr[i];
+			arr[i] = arr[min];
+			arr[min] = temp;
+		}
+	}
+}
 void makeMoveInfo(int movelist[], MoveInfo movelist2[],  int cntMoves) {
 	for (int i=0; i < cntMoves; i++) {
 		movelist2[i].move = movelist[i];
@@ -187,7 +205,7 @@ int calcBestMoveAux( int depthlevel, int alpha, int beta)  {
 	MoveInfo movelist[200];
 
 	getTheMovelist(movelist, &cntMoves);
-    printMovelist(movelist, cntMoves);
+	//printMovelist(movelist, cntMoves);
 
 	int flags2=gs.flags;
 	U64 hash=gs.hash;
@@ -241,14 +259,14 @@ int calcBestMoveAux( int depthlevel, int alpha, int beta)  {
 			movelist[i].value=score;
 			unmake(move, flags2, hash);
 
-			if (search_debug) {
+		/*	if (search_debug) {
 				char s[5];
 				moveToString(move,s);
 				printf("Level  %d  move %s value %d bestval %d alpha %d beta %d\n",
-										currentDepth, s,
-										score,
-										bestScoreForThisIteration,alpha, beta);
-			}
+						currentDepth, s,
+						score,
+						bestScoreForThisIteration,alpha, beta);
+			}*/
 
 			if (score < bestScoreForThisIteration) {
 				bestScoreForThisIteration=score;
@@ -380,7 +398,15 @@ In the intermediate node this our alpha becomes the opponent's beta
  *
  */
 
-
+void displayMoves(int movelist[], int numMoves) {
+	for (int i=0; i < numMoves; i++) {
+		int move = movelist[i];
+		int sortval = orderingValue(move);
+		char s[5];
+		moveToString(move, s);
+		printf("%s order %d\n", s, sortval);
+	}
+}
 int search( int alpha, int beta,
 		int depth, int mate, bool allowNull, bool extended, bool returnBestMove)
 {
@@ -397,20 +423,15 @@ int search( int alpha, int beta,
 		}
 	}
 	U64 hash=gs.hash;
-
-	/*if (Engine2.isRepetition(gs, gs.color)) {
-			return 0;
-		}*/
+	int flags2=gs.flags;
 	bool foundPv=false;
 
 	bool ownKingInCheck=isInCheck( gs.color);
-
 	if (depth == 0) {
 
 		if ( (extensionsOn) && (!extended) && ( gs.promotion || gs.seventhRankExtension
 				|| isSameSquareRecapture() || ownKingInCheck))
 		{
-
 			depth++;
 			extended = true;
 		}
@@ -421,6 +442,7 @@ int search( int alpha, int beta,
 
 	int bestScore = MIN_INFINITY;
 	int bestMove = INVALID_MOVE;
+
 
 	//null move; ( not allowed when in check )
 	/****************************************************************
@@ -438,7 +460,7 @@ int search( int alpha, int beta,
 		if ( gs.color==BLACK) gs.hash = gs.hash ^ gs.side;
 
 		int nullMoveScore
-		    = -search( -beta, -beta + 1,depth - 1 - R,  mate-1, false,false,false);
+		= -search( -beta, -beta + 1,depth - 1 - R,  mate-1, false,false,false);
 
 		gs.color = 1-gs.color;
 		if ( gs.color==BLACK) gs.hash = gs.hash ^ gs.side;
@@ -452,7 +474,6 @@ int search( int alpha, int beta,
 			return beta;
 		}
 	}
-
 	/****************************************************************
 	 * COMMENT from CPW engine
 	 *  If  depth  is too low for a null move pruning,  decide  if   *
@@ -474,7 +495,6 @@ int search( int alpha, int beta,
 			fprune = true;
 		}
 	}
-
 	if (useTT) {
 		bool found = tt_probeHash(gs.hash);               // *** check if this position was visited before, and if we still have info about it
 
@@ -488,19 +508,21 @@ int search( int alpha, int beta,
 		}
 	}
 	/*---------------------------------------------------------
-		   | Internal iterative deepening: if this is a PV node and |
-		   | there is no best move from the hash table, then do a   |
-		   | shallow search to find a best move to search first.    |
-		   ---------------------------------------------------------*/
+			   | Internal iterative deepening: if this is a PV node and |
+			   | there is no best move from the hash table, then do a   |
+			   | shallow search to find a best move to search first.    |
+			   ---------------------------------------------------------*/
 	if ( (useIID ) && ( alpha != beta+1 ) && ( bestMove == INVALID_MOVE) && (depth > 3) && (allowNull) )  {
 		//bestMove = search( alpha, beta,
 		//		depth - 2, mate, allowNull, extended, true)   ;
 	}
-
 	int movelist[200];
 	int legal=0;
-	int flags2=gs.flags;
+
 	int childrenSearched=0;
+
+	int numMoves=0;
+
 	int movegen_phase= MOVEGEN_HASHMOVE_PHASE;
 	int lastMovegen_phase=MOVEGEN_NONCAPTURES_PHASE;
 
@@ -510,8 +532,7 @@ int search( int alpha, int beta,
 	}
 
 	bool hashFound=false;
-	int numMoves=0;
-	outerloop:
+
 	while ( movegen_phase <= lastMovegen_phase)
 	{
 		switch(movegen_phase) {
@@ -538,28 +559,28 @@ int search( int alpha, int beta,
 
 		case MOVEGEN_CAPTURES_PHASE:
 			generateCapturesAndPromotions(gs.color, movelist, &numMoves);
-			if (movelist != 0 ) {
+			if (numMoves > 0 ) {
 				orderMovesCaps( movelist, numMoves, hash,depth, bestMove, hashFound);
 			}
 			break;
 
 		case MOVEGEN_NONCAPTURES_PHASE:
 			generateNonCaptures(gs.color, movelist, &numMoves);
-			if (movelist != 0 ) {
+			if (numMoves > 0 ) {
 				orderMoves( movelist, numMoves, depth, bestMove, hashFound);
 			}
 			break;
 		case MOVEGEN_CHECK_EVASION_PHASE:
 			generateCheckEvasionMoves(gs.color, movelist, &numMoves);
-			if (movelist != 0 ) {
+			if (numMoves > 0 ) {
 				orderMoves( movelist, numMoves, depth, bestMove, hashFound);
 			}
 			break;
 		}
-
+		//displayMoves(movelist, numMoves);
 		for (int i=0; i < numMoves; i++)
 		{
-			int move = getNextMove(i, movelist, numMoves);
+			int move = getNextMove(i, movelist, numMoves) ;
 			if (move==0) {
 				continue;
 			}
@@ -590,6 +611,7 @@ int search( int alpha, int beta,
 					}
 				}
 			}
+
 			int score;
 			int searchDepth=depth-1;
 
@@ -623,11 +645,12 @@ int search( int alpha, int beta,
 					if(score >= beta)  {
 						if (legal==1) firstMoveCutoffs++;
 						numCutoffs++;
+
 						if ( myMoveType < 10 )   // not a capture or promotion
 						{
 							updateKillerAndHistory( depth, move);
 						}
-						goto outerloop;             // *** beta cutoff: previous ply is refuted by this move, so we can stop here to take that back
+						goto done;             // *** beta cutoff: previous ply is refuted by this move, so we can stop here to take that back
 					}
 				}
 			}
@@ -635,6 +658,7 @@ int search( int alpha, int beta,
 		movegen_phase++;
 	}  // next phse
 
+	done:
 	if (legal == 0) {
 		if (! isInCheck( gs.color) )  {
 			return 0;
@@ -719,9 +743,9 @@ int quies(  int alpha, int beta, int depth)
 	int val ;
 
 	if (positionalEvalOn)
-		val= getEvaluation(gs);
+		val= getEvaluation();
 	else
-		val=getEvaluationMaterial(gs);
+		val=getEvaluationMaterial();
 
 	if (val >= beta) {
 		return beta;
@@ -732,12 +756,12 @@ int quies(  int alpha, int beta, int depth)
 	int numMoves;
 	int movelist[150];
 	generateCapturesAndPromotions(gs.color, movelist,&numMoves);
-	if (movelist==0 ) return val;
+	if (numMoves==0 ) return val;
 
 	if (turnSEEOn)
 		orderCapturesBySee( movelist, numMoves);
 	//else
-		//	Util.sort(movelist);
+	   //sorter(movelist, numMoves);
 
 	U64 hash = gs.hash;
 	int flags2=gs.flags;
@@ -913,17 +937,17 @@ void setUsingTime(bool b) {
 	usingTime=b;
 }
 
-int getNextMove(int i, int* moves, int numMoves) {
+int getNextMove(int i, int moves[], int numMoves) {
 	if (numMoves==1)
 		return moves[i];
 	for (int j = i+1; j < numMoves; j++)
+	{
+		if ( moves[j] < moves[i] )
 		{
-			if ( moves[j] < moves[i] )
-			{
-				int temp=moves[i];
-				moves[i]=moves[j];
-				moves[j]=temp;
-			}
+			int temp=moves[i];
+			moves[i]=moves[j];
+			moves[j]=temp;
 		}
-		return moves[i];
 	}
+	return moves[i];
+}

@@ -23,7 +23,7 @@ U64 knightMoveArray[64];
 U64  kingMoveArray[64];
 U64 pawnCheckArray[2][64];    //white, black
 
-const int orderingValues[]= {26,26,20,20,14,14,8,8,2,2};
+const int orderingValues[]= {26,26,11,11,12,12,8,8,2,2};
 int sortVal[6][5];
 
 int* getCheckEvasionSquares( int color, gameState gs) ;

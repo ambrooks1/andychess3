@@ -183,8 +183,11 @@ void printMove(int move) {
 
 		if (type == simplePromotionQueen || type == capturePromotionQueen) { //promotion
 			s[4] =  promotionConvert(type, pm);
+			s[5]=NULL;
 		}
-
+		else {
+			s[4]=NULL;
+		}
 	}
 
 

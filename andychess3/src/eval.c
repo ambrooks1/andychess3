@@ -437,13 +437,13 @@ int getEvaluation() {
 	       + passedPawnBonus[1];
 	int eval =  tot[gs.color] - tot[1-gs.color];
 
-	printf( "white material   %d: black material   %d \n", gs.material[WHITE], gs.material[BLACK]);
+/*	printf( "white material   %d: black material   %d \n", gs.material[WHITE], gs.material[BLACK]);
 	printf( "white positional %d: black positional %d \n", gs.positional[WHITE], gs.positional[BLACK]);
 	printf( "white bonus      %d: black bonus      %d \n", bonus(WHITE),         bonus(BLACK));
 	printf( "WHITE PP BONUS   %d:  BLACK PP BONUS  %d \n", passedPawnBonus[WHITE], passedPawnBonus[BLACK]);
 
 	printf( "WHITE total   %d:  BLACK total  %d \n", 		tot[WHITE],		tot[BLACK]);
-	printf(" eval %d\n", eval);
+	printf(" eval %d\n", eval);*/
 	return eval;
 
 }
