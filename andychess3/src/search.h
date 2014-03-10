@@ -28,7 +28,7 @@
 #define   R  							2     // used for null move
 #define  FullDepthMoves  				4
 #define   ReductionLimit  				3
-#define   MAXDEPTH 						20
+#define   MAXDEPTH 						50
 
 #define  NO_HISTORY_SORT_VAL  			63
 #define   HISTORY_POINTS  				30

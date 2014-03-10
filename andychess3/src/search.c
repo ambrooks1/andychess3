@@ -248,8 +248,10 @@ int calcBestMoveAux( int depthlevel, int alpha, int beta)  {
 			assert(myMoveType >=1 && myMoveType <= 9);
 			if (!isLegal( move, flags2, hash, myMoveType)) continue;
 
+
 			int searchDepth=currentDepth;
 			int score;
+			assert(searchDepth < MAX_DEPTH);
 			score = search( alpha, beta,  searchDepth,MATE,true,false, false);
 
 			if (usingTime && stopSearch) {
@@ -410,6 +412,7 @@ void displayMoves(int movelist[], int numMoves) {
 int search( int alpha, int beta,
 		int depth, int mate, bool allowNull, bool extended, bool returnBestMove)
 {
+	assert(depth < MAX_DEPTH);
 	if (usingTime) {
 		nextTimeCheck--;
 		if(nextTimeCheck == 0) // Time to check the time
@@ -432,6 +435,7 @@ int search( int alpha, int beta,
 		if ( (extensionsOn) && (!extended) && ( gs.promotion || gs.seventhRankExtension
 				|| isSameSquareRecapture() || ownKingInCheck))
 		{
+			assert(depth < MAX_DEPTH);
 			depth++;
 			extended = true;
 		}
@@ -458,9 +462,8 @@ int search( int alpha, int beta,
 	if  ( turnNullOn && (!ownKingInCheck) && allowNull  && ((depth - 1 - R) > 2) && (!isEndGame())) {
 		gs.color = 1-gs.color;
 		if ( gs.color==BLACK) gs.hash = gs.hash ^ gs.side;
-
-		int nullMoveScore
-		= -search( -beta, -beta + 1,depth - 1 - R,  mate-1, false,false,false);
+		assert(depth < MAX_DEPTH);
+		int nullMoveScore= -search( -beta, -beta + 1,depth - 1 - R,  mate-1, false,false,false);
 
 		gs.color = 1-gs.color;
 		if ( gs.color==BLACK) gs.hash = gs.hash ^ gs.side;
@@ -560,6 +563,7 @@ int search( int alpha, int beta,
 		case MOVEGEN_CAPTURES_PHASE:
 			generateCapturesAndPromotions(gs.color, movelist, &numMoves);
 			if (numMoves > 0 ) {
+				assert(depth < MAX_DEPTH);
 				orderMovesCaps( movelist, numMoves, hash,depth, bestMove, hashFound);
 			}
 			break;
@@ -567,12 +571,18 @@ int search( int alpha, int beta,
 		case MOVEGEN_NONCAPTURES_PHASE:
 			generateNonCaptures(gs.color, movelist, &numMoves);
 			if (numMoves > 0 ) {
+				assert(depth < MAX_DEPTH);
 				orderMoves( movelist, numMoves, depth, bestMove, hashFound);
 			}
 			break;
 		case MOVEGEN_CHECK_EVASION_PHASE:
-			generateCheckEvasionMoves(gs.color, movelist, &numMoves);
+			//generateCheckEvasionMoves(gs.color, movelist, &numMoves);
+			getAllMoves(gs.color, movelist, &numMoves);
 			if (numMoves > 0 ) {
+				if (depth >= MAX_DEPTH) {
+					printf("OUCH depth == %d\n", depth);
+				}
+				assert(depth < MAX_DEPTH);
 				orderMoves( movelist, numMoves, depth, bestMove, hashFound);
 			}
 			break;
@@ -676,6 +686,7 @@ int search( int alpha, int beta,
 int pv_search( int alpha, int beta,
 		int mate, bool extended, bool foundPv, int searchDepth) {
 	int score;
+	assert(searchDepth < MAX_DEPTH);
 	if (foundPv) {
 		score = -search(   -alpha - 1, -alpha, searchDepth,mate - 1, true,extended, false);   // reduced window pv search
 		if ((score > alpha) && (score < beta)) // Check for failure.
@@ -690,6 +701,7 @@ int lmr_search( int alpha, int beta,
 		int depth, int mate, bool extended, int legal,
 		bool opponentIsInCheck, int searchDepth, int myOrderingValue) {
 	int score;
+	assert(searchDepth < MAX_DEPTH);
 	if (legal == 1) {
 		score = -search( -beta, -alpha,searchDepth, mate - 1, true,extended, false);        //normal alpha-beta search
 	}

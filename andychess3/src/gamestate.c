@@ -267,7 +267,9 @@ void parseFen ( char fen[]) {
 	char col = 0;
 	char row = 0;
 	int state=0;
-	char enPassant[2];
+	char enPassant[3];
+	enPassant[0]=enPassant[1]=' ';
+	enPassant[2]='\0';
 	int epIdx=0;
 	for (int i=0; i < fenLength; i++) {
 		//printf("fen char %c \n", fen[i]);
