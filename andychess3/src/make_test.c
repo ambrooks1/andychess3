@@ -48,7 +48,7 @@ void setEPSquareOnDoubleMove() {
 	printf("Running setEPSquareOnDoubleMove\n");
 	char fen[] = "2b2rk1/1p2p2p/1p2n1p1/r2BNp2/3p4/4P3/PPP2PPP/R4RK1 w - - 1 19";
 	parseFen(fen);
-	int move = createMoveFromString("c2-c4", WP, 0, doublePawnMove);
+	int move = createMoveFromString("c2c4", WP, 0, doublePawnMove);
 	make(move);
 	int epSquare = getEPSquare();
 	printf("epSquare %d\n", epSquare);
@@ -73,7 +73,7 @@ void testMaterial() {
 void capturePromotionTestBlack() {
 	    printf("capturePromotionTestBlack\n");
 		char s[] = "rnbqkbnr/pp1ppppp/7P/8/8/8/PPp1PPP1/RNBQKBNR b KQkq - 0 5";
-		char textMove[]= "c2-d1";
+		char textMove[]= "c2d1";
 		int myFromType=BP;
 		int victim=WQ;
 
@@ -94,7 +94,7 @@ void enPassantTestBlack2() {
 	printf("enPassantTestBlack2\n");
 	char fen[] = "8/8/8/8/R1pP2k1/4P3/P7/K7 b - d3 0 1";
 	parseFen(fen);
-	char textMove[] = "c4-d3";
+	char textMove[] = "c4d3";
 	int myFromType=BP;
 	//DO AN ENPASSANT CAPTURE, SHOULD FAIL
 	int move = createMoveFromString(textMove, myFromType, WP, epCapture);
@@ -106,7 +106,7 @@ void enPassantTestBlack2() {
 }
 void simplePromotionTestWhite() {
 	char s[] = "rnbqkb1r/1p1pppPp/p4n2/8/8/8/PP2PPP1/RNBK1BNR w kq - 1 8";
-	char textMove[]= "g7-g8";
+	char textMove[]= "g7g8Q";
 	int myFromType=WP;
 	int victim=0;
 	parseFen(s);
@@ -153,7 +153,7 @@ void bishopCheck() {
     	char s[] = "2kr1bnr/ppp2ppp/8/4n3/6b1/2P2N2/PPK1BPPP/RNB4R b - - 3 9";
     	printf("Running bishop_check\n");
 
-    	int move = createMoveFromString("g4-f5", BB, 0, simple);
+    	int move = createMoveFromString("g4f5", BB, 0, simple);
     	int flags2 = gs.flags;
 		long hash2 = gs.hash;
 		parseFen(s);
@@ -165,11 +165,23 @@ void bishopCheck() {
 		assertEquals(gs2, gs);
 		testMaterial();
     }
+void promotionTestWhite() {
+	printf("Promotion Test white\n");
+	char fen[] = "5B2/6P1/1p6/8/1N6/kP6/2K5/8 w - - 0 1";
+	parseFen(fen);
+
+	char moveStr[]= "g7g8Q";
+	int move = createMoveFromString(moveStr, WP, 0, simplePromotionQueen);
+	make(move);
+	int cnt = popCount(gs.bitboard[WQ]);
+	assert(cnt==1);
+}
 void make_test_suite() {
 	assert(gs.initialized);
 	make_test();
 	bishopCheck();
 	//testCastlingPrivilege();
+	promotionTestWhite();
 	capturePromotionTestBlack();
 	setEPSquareOnDoubleMove();
 	enPassantTestBlack2();

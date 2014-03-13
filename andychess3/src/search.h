@@ -40,6 +40,7 @@
 #define MAX_MOVES						200
 #define LOGGING_STRING_SIZE				1000
 
+bool isRepetition();
 void printMovelist(MoveInfo mi[], int cntMoves) ;
 void calcBestMove( int depthLevel2, char *moveStr) ;
 int quies(  int alpha, int beta, int depth);

@@ -24,10 +24,18 @@
 #include "movegen.h"
 #include "util.h"
 
+//void write(char* message);
 
+//bool printLogging=true;
+
+extern int fiftyMoveCounter;
+extern int stateHistCtr;
+extern U64 stateHistory[200];
+
+extern int movesMade;
 int  nextTimeCheck = TIME_CHECK_INTERVAL;
-int movesPerSession=0;   //default
-int movesMade=0;
+int movesPerSession=40;   //default
+
 U64 baseTime=0;     // in milliseconds; default = 15 minutes
 U64 increment=0;
 
@@ -122,7 +130,9 @@ void initGlobals() {
 
 void calcBestMove( int depthLevel2, char *moveStr) {
 	depthLevel=depthLevel2;
+
 	initGlobals();
+
 
 	int move = calcBestMoveAux(depthLevel, MIN_INFINITY, MAX_INFINITY);
 	movesMade++;
@@ -200,6 +210,7 @@ void getTheMovelist(MoveInfo movelist2[], int *cntMoves2) {
 
 int calcBestMoveAux( int depthlevel, int alpha, int beta)  {
 
+	fflush(stdout);
 	int    bestMove=0;
 	int 	cntMoves;
 	MoveInfo movelist[200];
@@ -216,15 +227,17 @@ int calcBestMoveAux( int depthlevel, int alpha, int beta)  {
 	if (usingTime) {
 		maxIterations=MAXDEPTH;
 	}
-
+	//write("# getting time\n");
 	if (usingTime) {
 		startTime=currentTimeMillisecs();
 		timeForThisMove = getTimeForThisMove(timeLeft,
 				movesPerSession- ( ( movesMade + numBookMovesMade) % movesPerSession ), increment);
 	}
 	int bestScoreForThisIteration = 0;
-
+	//write("# starting iterations\n");
 	while (currentDepth < maxIterations) {
+		//printf("#current depth %d\n", currentDepth);
+		//fflush(stdout);
 		// we don't have enough time to do this iteration, so return the global best move
 		if (usingTime) {
 			U64 elapsedTime = currentTimeMillisecs() - startTime;
@@ -297,7 +310,7 @@ int calcBestMoveAux( int depthlevel, int alpha, int beta)  {
 
 		currentDepth++;
 	}  //end of iteration deepening loop
-	if (search_debug) printLoggingInfo(currentDepth, bestMove, bestScoreForThisIteration);
+	//if (printLogging) printLoggingInfo(currentDepth, bestMove, bestScoreForThisIteration);
 	//ponderMove=getPonderMove(gs, bestMove);
 
 	return bestMove;
@@ -331,7 +344,8 @@ void printLoggingInfo(int currentDepth, int bestMove, int score) {
 	sprintf(str2,"futility Prunes %d usingKillerMoves %d\n", futilityPrune, usingKillerMove);
 	strcat(str, str2);
 
-	printf("%s",str);
+	printf("#%s\n",str);
+	fflush(stdout);
 }
 bool isLegal (const int move, int flags2, U64 hash, int moveType) {
 
@@ -409,10 +423,21 @@ void displayMoves(int movelist[], int numMoves) {
 		printf("%s order %d\n", s, sortval);
 	}
 }
+bool isRepetition() {
+	int j=0;
+	for (int i=stateHistCtr; i >= 0; i=i-2 ) {
+		if (j >= fiftyMoveCounter) return false;
+		if (i < 0 ) return false;
+		if (stateHistory[i]==gs.hash ) return true;
+		j++;
+	}
+	return false;
+}
 int search( int alpha, int beta,
 		int depth, int mate, bool allowNull, bool extended, bool returnBestMove)
 {
 	assert(depth < MAX_DEPTH);
+
 	if (usingTime) {
 		nextTimeCheck--;
 		if(nextTimeCheck == 0) // Time to check the time
@@ -426,6 +451,11 @@ int search( int alpha, int beta,
 		}
 	}
 	U64 hash=gs.hash;
+	if (isRepetition()) {
+	  if (!returnBestMove) {
+		  return 0;
+	  }
+	}
 	int flags2=gs.flags;
 	bool foundPv=false;
 

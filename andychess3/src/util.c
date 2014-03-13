@@ -166,7 +166,7 @@ const char* getSquareFromIndex(int idx) {
 	assert(idx >=0 && idx <= 63);
 	return squares[idx];
 }
-int getIndexFromSquare ( char *square) {
+int getIndexFromSquare ( char square[]) {
 	assert(square != NULL);
 
 	unsigned long len = strlen(square);

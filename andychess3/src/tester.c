@@ -22,6 +22,7 @@
 #include "search.h"
 #include "make_test.h"
 #include "SEE_test.h"
+#include "book.h"
 
 extern gameState gs;
 extern bool search_debug;
@@ -41,10 +42,10 @@ void hash_test() {
 	parseFen(startPos);
 	U64 hash = gs.hash;
 
-	hash_test_aux("g1-f3", WN, 0, simple);
-	hash_test_aux("g8-f6", BN, 0, simple);
-	hash_test_aux("f3-g1", WN, 0, simple);
-	hash_test_aux("f6-g8", BN, 0, simple);
+	hash_test_aux("g1f3", WN, 0, simple);
+	hash_test_aux("g8f6", BN, 0, simple);
+	hash_test_aux("f3g1", WN, 0, simple);
+	hash_test_aux("f6g8", BN, 0, simple);
 
 	U64 hash2 = gs.hash;
 
@@ -244,6 +245,9 @@ static void test_get_legal_moves() {
 
 	char pos5[]="r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10";
 	testAux(pos5, 46);
+
+	char fen[]="6k1/1R3p2/4p1p1/p1r3Pp/8/2PR3P/r4P2/5K2 b - - 0 44";
+	testAux(fen, 27);
 }
 
 
@@ -264,6 +268,7 @@ static  void execute(char *answer) {
 
 	U64 start = currentTimeMillisecs() ;
 	search_debug=true;
+
 	char moveStr[6];
 
 	calcBestMove(  depthLevel, moveStr);
@@ -361,25 +366,34 @@ void do_eval() {
 	parseFen(fen);
 	getEvaluation();
 }
-int main(void) {
+int main2(void) {
 
 	initializeAll();
-	printf("Finished initializing\n");
-	/*checkTest();
+	//printf("Finished initializing\n");
+	checkTest();
 	illegal_move_test();
 	test_get_legal_moves();
-	make_test_suite();
+	 make_test_suite();
 	see_test_suite();
+
 	check_test();
 	isLegal_test();
 	eval_test();
 
 	run_perft_test();
     check_evasion_test();
-    hash_test();*/
+    hash_test();
 	winAtChess();
-	//do_eval();
+	do_eval();
 
+	/*char fen[] = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+	parseFen(fen);
+	char fen2[70];
+	int fenLen=0;
+	toFEN(fen2, &fenLen);
+	printf("len=%d fen=%s \n",fenLen, fen2);*/
+
+	//createBook("tiny.book");
 	return EXIT_SUCCESS;
 }
 

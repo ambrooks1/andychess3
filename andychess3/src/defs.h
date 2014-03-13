@@ -69,6 +69,13 @@ typedef unsigned long long U64 ;
 #define PAWN_STRUC_TBL_ENTRIES 500000
 #define TRANS_TBL_ENTRIES 5000000
 
+#define NUM_BOOK_MOVES 3072
+
+typedef struct BookMove {
+	U64 hash;
+	int movelist[10];
+} BookMove;
+
 typedef struct MoveInfo {
 	int move;
 	int value;

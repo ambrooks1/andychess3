@@ -57,6 +57,8 @@ Time not used on one move does not accumulate for use on later moves.
 #include <sys/time.h>
 #include "defs.h"
 
+extern int movesPerSession;
+
 U64 currentTimeMillisecs() {
 	struct timeval tv;
 	gettimeofday(&tv, NULL);
@@ -93,14 +95,14 @@ U64 getTimeForThisMove(U64 timeLeft, int movesLeft, U64 increment) {   // from j
 const int GUESSEDLENGTH =40;
 
 void setTimeLevel(char *line) {
-	int movesPerSession;
+	int mps;
 	U64 baseTime, increment;
 
 	int sec = 0;
 	if (    sscanf(line, "level %d %lld %lld",
-			   &movesPerSession, &baseTime, &increment)!=3 &&
+			   &mps, &baseTime, &increment)!=3 &&
 	        sscanf(line, "level %d %lld:%d %lld",
-					&movesPerSession, &baseTime, &sec, &increment)!=4)
+					&mps, &baseTime, &sec, &increment)!=4)
 	{
 		printf ("ERROR in level statement\n");
 		return;
@@ -123,9 +125,9 @@ void setTimeLevel(char *line) {
 
 	//System.out.println("moves per session " + movesPerSession + " baseTime " + baseTime + " increment " + increment);
 
-	if(movesPerSession > 0) // Tournament format
+	if(mps > 0) // Tournament format
 	{
-		//Search2.movesPerSession=movesPerSession;
+		movesPerSession=mps;
 	}
 
 }

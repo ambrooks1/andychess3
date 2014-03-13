@@ -1185,8 +1185,114 @@ bool isMoveLegal ( int move) {
 	}
 	return true;
 }
+bool isBitSet(int x, int position)
+{
+		   x >>= position;
+		  return (x & 1) != 0;
+}
+void  castlingToString(char castlingStr[5], int *length)
+		{
+
+			bool flag=false;
+			int k=0;
+			for (int i=0; i < 4; i++)
+			{
+				if (isBitSet(gs.flags,i))
+				{
+					switch(i) {
+						case WKSIDE: castlingStr[k++] = 'K';
+						flag=true;
+						break;
+						case WQSIDE: castlingStr[k++] = 'Q';
+						flag=true;
+						break;
+						case BKSIDE: castlingStr[k++] = 'k';
+						flag=true;
+						break;
+						case BQSIDE: castlingStr[k++] = 'q';
+						flag=true;
+						break;
+
+					}
+				}
+			}
+			if (!flag)castlingStr[k++] = '-';
+			castlingStr[k]= '\0';
+			*length=k;
+		}
+
+void toFEN(char fen[], int* length)
+// convert a 64 square board, with ints
+// into something like
+
+//        r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1
+	{
+		int idx=0;
+		int i,j, boardIdx, numEmptySquares;
+
+		for ( i = 0; i< 8; i++ )
+		{
+			numEmptySquares = 0;
+
+			for ( j = 0; j < 8; j++)
+			{
+				boardIdx = i*8 + j; // Array index
+
+				if (gs.board[boardIdx] != EMPTY)
+				{
+					if( numEmptySquares > 0 )
+					{
+						fen[idx++]=numEmptySquares;
+						numEmptySquares = 0;
+					}
+					fen[idx++] = gs.board[boardIdx];
+				}
+				else
+				{
+					numEmptySquares++;
+				}
+			}
+			if( numEmptySquares > 0 )
+			{
+				fen[idx++]=numEmptySquares;
+			}
+			fen[idx++]='/';
+		}
+		idx--;
+
+		// to remove the trailing '/'
+
+		fen[idx++] = ' ';
+		if (gs.color==WHITE)
+			fen[idx++]='w';
+		else
+			fen[idx++]='b';
+
+		fen[idx++] = ' ';
+		int len=0;
+		char castlingStr[5];
+		castlingToString(castlingStr, &len);
+		strcat(fen, castlingStr);
+		idx=idx+len;
+
+		fen[idx++] = ' ';
+		int epSquare = getEPSquare();
+
+		if (epSquare== 0 ) {
+			fen[idx++]='-';
+		}
+		else {
+			const char * epSq = getSquareFromIndex(63 - epSquare);
+			fen[idx++]=epSq[0];
+			fen[idx++]=epSq[1];
+		}
+
+		fen[idx]='\0';
+		*length=idx;
+	}
+
 void initializeAll() {
-	printf("initializing\n");
+	//printf("initializing\n");
 	initializeMoveGen();
 	generateBishopAttacks();
 	generateRookAttacks();

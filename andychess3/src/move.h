@@ -7,6 +7,7 @@
 
 #ifndef MOVE_H_
 #define  MOVE_H_
+#include <stdbool.h>
 
 #define 				simple	   		       1
 #define 				kcastle	    	       2
@@ -31,6 +32,7 @@
 #define TYPE_MASK  31 // 5 bits
 #define ORDERING_CLEAR  0x1FFFFFF //  00000001111111111111111111111111 use with & which clears the ordering value
 
+bool isMoveString(char * command);
 void moveToString(int move, char s[]);
 int createMoveFromString(char str[], int fromType, int capture, int moveType);
 int createMove(int pieceMoving, int fromIndex, int toIndex, int capture, int type, int ordering);
