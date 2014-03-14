@@ -40,7 +40,7 @@ int legalMoves[200];
 int numLegalMoves=0;
 
 bool forceMode=true;
-int searchDepth=7;
+
 int movesMade=0;
 
 int sideToMove=NONE, computerSide=NONE;    // 0 is WHITE, 1 is BLACK
@@ -58,15 +58,15 @@ void write(char* message)
 	fflush(stdout);
 }
 
-int toggle(int sideToMove) {
-	return ( 1 - sideToMove);
+int toggle(int stm) {
+	return ( 1 - stm);
 }
 
 
 int  validate(char moveStr[]) {
 	for (int i=0; i < numLegalMoves; i++) {
 		int legalMove = legalMoves[i];
-		char mvStr[5];
+		char mvStr[6];
 		moveToString(legalMove, mvStr);
 		if (strcmp(moveStr,mvStr)==0) {
 			return legalMove;
@@ -92,10 +92,8 @@ int  applyMove(char moveStr[])
 // in response to getting a move from the opponent
 {
 	if (!gs.initialized) return 0;
-	if (moveStr==NULL || *moveStr=='\0') {
-		write("Empty move in applyMove");
-		return 0;
-	}
+	assert( strlen(moveStr) == 4 || strlen(moveStr)== 5);
+
 	if (numLegalMoves < 1) {
 		write("Game over; no legal moves");
 		return 0;
@@ -124,8 +122,9 @@ void findAndApplyMove()
 // so we need to do a search
 {
 	if (gs.initialized== false) return;
+
 	char bestmove[6];
-	bestmove[0]=0;
+	memset(bestmove,0,sizeof(bestmove));
 	/*
 			    if (!outOfBook) {
 			    	getMove(depthLevel, bestmove);
@@ -139,13 +138,60 @@ void findAndApplyMove()
 			    }
 			    else*/
 	//write("# Doing  calcBestMove");
-	calcBestMove( searchDepth, bestmove);
+	calcBestMove( bestmove);
 	//write("# Did calcBestMove; doing apply move ");
 	applyMove(bestmove);
 	//write("# Did  applymove");
 	printf("move %s\n" , bestmove);
 	fflush(stdout);
 	myTurn=false;
+}
+
+void newGame() {
+	if (gs.initialized== false) return;
+	/*
+	 *   Reset the board to the standard chess starting position.
+	 *   Set White on move.
+	 *   Leave force mode and set the engine to play Black.
+	 *   Associate the engine's clock with Black and the opponent's clock with White.
+	 *   Reset clocks and time controls to the start of a new game.
+	 *   Do not ponder on this move, even if pondering is on.
+	 *   Remove any search depth limit previously set by the sd command.
+	 */
+	forceMode=false;
+
+	gs.currentPly=0;
+	movesMade=0;
+	numBookMovesMade=0;
+	stateHistCtr = 0;    // state HistoryCounter, incremented for every move played on the board
+	fiftyMoveCounter=0;
+	memset(stateHistory,0,sizeof(stateHistory));
+	memset(legalMoves,0,sizeof(legalMoves));
+	gs.moveCounter=0;
+
+	parseFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
+	//GameState.stateHistory[GameState.currentPly++]=state.hash;
+
+	getLegalMoveList(legalMoves, &numLegalMoves);
+	outOfBook=false;
+
+	sideToMove=WHITE;
+	computerSide=BLACK;
+}
+
+void processMove(char command[80]) {
+	if (sideToMove == NONE) {
+		//we have received a move for the first time, so the computer must be playing black
+		sideToMove = BLACK;
+		computerSide = BLACK;
+	}
+	applyMove(command);
+	if (sideToMove == computerSide)
+		myTurn = true;
+
+	// do the normal search
+	if (myTurn)
+		findAndApplyMove();
 }
 
 int main() {
@@ -156,14 +202,14 @@ int main() {
 	signal(SIGTERM, SIG_IGN);
 	signal(SIGINT, SIG_IGN);
 
-	 printf("Welcome to Javalin Chess Engine %s\n", version);
-	 fflush(stdout);
+	printf("Welcome to Javalin Chess Engine %s\n", version);
+	fflush(stdout);
 
-	 write("Type 'new' to start a new game, or 'quit' to end.");
-	 write("Then input a move ( Ex. 'e2e4' ) .");
+	write("Type 'new' to start a new game, or 'quit' to end.");
+	write("Then input a move ( Ex. 'e2e4' ) .");
 
 	while (1) {
-	   fflush(stdout);                 // make sure everything is printed before we do something that might take time
+		fflush(stdout);                 // make sure everything is printed before we do something that might take time
 
 		// wait for input, and read it until we have collected a complete line
 		for(i = 0; (inBuf[i] = getchar()) != '\n'; i++);
@@ -202,32 +248,12 @@ int main() {
 
 		//if(!strcmp(command, "sd"))      { sscanf(inBuf, "sd %d", &maxDepth);    continue; }
 		//if(!strcmp(command, "st"))      { sscanf(inBuf, "st %d", &timePerMove); continue; }
-		//if(!strcmp(command, "memory"))  { SetMemorySize(atoi(inBuf+7)); continue; }
+
 		if(!strcmp(command, "ping"))    { printf("pong%s", inBuf+4); continue; }
 		//  if(!strcmp(command, ""))        { sscanf(inBuf, " %d", &); continue; }
 
 		if(!strcmp(command, "new"))     {
-			/*
-			 *   Reset the board to the standard chess starting position.
-			 *   Set White on move.
-			 *   Leave force mode and set the engine to play Black.
-			 *   Associate the engine's clock with Black and the opponent's clock with White.
-			 *   Reset clocks and time controls to the start of a new game.
-			 *   Do not ponder on this move, even if pondering is on.
-			 *   Remove any search depth limit previously set by the sd command.
-			 */
-			forceMode=false;
-			gs.currentPly=0;
-
-			parseFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-			//GameState.stateHistory[GameState.currentPly++]=state.hash;
-			gs.moveCounter=0;
-			getLegalMoveList(legalMoves, &numLegalMoves);
-			outOfBook=false;
-			movesMade=0;
-			numBookMovesMade=0;
-			sideToMove=WHITE;
-			computerSide=BLACK;
+			newGame();
 			continue;
 		}
 
@@ -259,18 +285,7 @@ int main() {
 		if(!strcmp(command, ""))  {  continue; }
 
 		if (isMoveString(command)) {
-
-			if (sideToMove==NONE) {
-				//we have received a move for the first time, so the computer must be playing black
-				sideToMove=BLACK;
-				computerSide=BLACK;
-			}
-
-			applyMove(command);
-
-			if (sideToMove == computerSide) myTurn=true;
-			// do the normal search
-			if (myTurn) findAndApplyMove();
+			processMove(command);
 		}
 	}
 	return 0;

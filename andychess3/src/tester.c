@@ -271,7 +271,7 @@ static  void execute(char *answer) {
 
 	char moveStr[6];
 
-	calcBestMove(  depthLevel, moveStr);
+	calcBestMove( moveStr);
 	//printf("move found, answer ***%s***%s\n", moveStr, answer);
 	U64 end =  currentTimeMillisecs() ;
 	U64 duration = end-start;

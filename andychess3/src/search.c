@@ -44,7 +44,7 @@ U64 opponentTimeLeft=0;     // time left for the opponent
 U64 timeForThisMove;
 bool  stopSearch = true;
 U64 startTime=0;
-int depthLevel=0;
+int depthLevel=7;
 
 int valWINDOW=35;
 extern bool useTT;
@@ -66,7 +66,7 @@ int history[2][64][64];
 
 int killer[MAXDEPTH][NUMKILLERS];
 bool        useIID,do_LMR,
-extensionsOn, futilityOn,aspirationOn,
+extensionsOn, futilityOn,
 turnNullOn,deltaPruneOn,positionalEvalOn,orderByHistory,
 orderByKillers,turnSEEOn;
 
@@ -90,7 +90,7 @@ void turnEverythingOn() {
 	do_LMR=true;
 	extensionsOn=true;
 	futilityOn=true;
-	aspirationOn=true;
+
 	turnNullOn=true;
 	positionalEvalOn=true;
 	deltaPruneOn=true;
@@ -128,13 +128,11 @@ void initGlobals() {
 	gs.moveCounter=0;
 }
 
-void calcBestMove( int depthLevel2, char *moveStr) {
-	depthLevel=depthLevel2;
+void calcBestMove( char *moveStr) {
 
 	initGlobals();
 
-
-	int move = calcBestMoveAux(depthLevel, MIN_INFINITY, MAX_INFINITY);
+	int move = calcBestMoveAux( MIN_INFINITY, MAX_INFINITY);
 	movesMade++;
 	moveToString(move, moveStr);
 }
@@ -208,9 +206,9 @@ void getTheMovelist(MoveInfo movelist2[], int *cntMoves2) {
 	*cntMoves2=cntMoves;
 }
 
-int calcBestMoveAux( int depthlevel, int alpha, int beta)  {
+int calcBestMoveAux( int alpha, int beta)  {
 
-	fflush(stdout);
+
 	int    bestMove=0;
 	int 	cntMoves;
 	MoveInfo movelist[200];
@@ -294,18 +292,20 @@ int calcBestMoveAux( int depthlevel, int alpha, int beta)  {
 			}
 		}// end processing all moves loop
 
-		if (aspirationOn) {
-			if (bestScoreForThisIteration <= alpha) {
+
+		if (bestScoreForThisIteration <= alpha) {
 				alpha = MIN_INFINITY;
-				continue;
-			}
-			else
-				if  (bestScoreForThisIteration >= beta) {
+
+		}
+		else
+		if  (bestScoreForThisIteration >= beta) {
 					beta = MAX_INFINITY;
-					continue;
-				}
-			alpha = bestScoreForThisIteration - valWINDOW;
-			beta = bestScoreForThisIteration + valWINDOW;
+
+		}
+		else
+		{
+					alpha = bestScoreForThisIteration - valWINDOW;
+					beta = bestScoreForThisIteration + valWINDOW;
 		}
 
 		currentDepth++;

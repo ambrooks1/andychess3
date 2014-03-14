@@ -42,14 +42,14 @@
 
 bool isRepetition();
 void printMovelist(MoveInfo mi[], int cntMoves) ;
-void calcBestMove( int depthLevel2, char *moveStr) ;
+void calcBestMove(char *moveStr) ;
 int quies(  int alpha, int beta, int depth);
 bool isLegal (const int move, int flags2, U64 hash, int moveType) ;
 int getNextMove(int i, int* moves, int numMoves);
 int lmr_search( int alpha, int beta,
 		int depth, int mate, bool extended, int legal,
 		bool opponentIsInCheck, int searchDepth, int myOrderingValue) ;
-int calcBestMoveAux( int depthlevel, int alpha, int beta);
+int calcBestMoveAux( int alpha, int beta);
 void updateKillerAndHistory( int depth, int move) ;
 void orderMoves( int* movelist, int numMoves, int depth, int hashMove, bool hashFound);
 void orderMovesCaps( int* movelist, int numMoves,  U64 hash, int depth, int hashMove, bool hashFound);
