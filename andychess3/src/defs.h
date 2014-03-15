@@ -9,6 +9,8 @@
 #ifndef DEFS_H_
 #define  DEFS_H_
 
+#define NDEBUG
+
 typedef unsigned long long U64 ;
 #define C64(constantU64) constantU64##ULL
 
@@ -70,6 +72,9 @@ typedef unsigned long long U64 ;
 #define TRANS_TBL_ENTRIES 5000000
 
 #define NUM_BOOK_MOVES 3072
+#define MAX_MOVES   200// from a given board position
+#define MAX_QUIES_MOVES 100
+
 
 typedef struct BookMove {
 	U64 hash;

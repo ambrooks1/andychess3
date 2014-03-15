@@ -38,7 +38,7 @@
 #define   NUMKILLERS 					2
 #define  MATE 							100000
 #define MAX_MOVES						200
-#define LOGGING_STRING_SIZE				1000
+#define LOGGING_STRING_SIZE				2000
 
 bool isRepetition();
 void printMovelist(MoveInfo mi[], int cntMoves) ;
@@ -53,7 +53,7 @@ int calcBestMoveAux( int alpha, int beta);
 void updateKillerAndHistory( int depth, int move) ;
 void orderMoves( int* movelist, int numMoves, int depth, int hashMove, bool hashFound);
 void orderMovesCaps( int* movelist, int numMoves,  U64 hash, int depth, int hashMove, bool hashFound);
-void printLoggingInfo(int currentDepth, int bestMove, int score);
+void printLoggingInfo(int currentDepth, int maxIterations, int bestMove, int score);
 int pv_search( int alpha, int beta,
 		int mate, bool extended, bool foundPv, int searchDepth) ;
 bool isCapture(int myMoveType) ;

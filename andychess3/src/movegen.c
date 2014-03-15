@@ -13,7 +13,7 @@
 #include "move.h"
 #include "util.h"
 #include "magic.h"
-#include "assert.h"
+#include <assert.h>
 #include "gamestate.h"
 
 extern gameState gs;

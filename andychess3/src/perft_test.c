@@ -9,7 +9,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <stdbool.h>
-#include "assert.h"
+
 #include "defs.h"
 #include "util.h"
 #include "movegen.h"
@@ -20,7 +20,7 @@
 #include "perft.h"
 #include <assert.h>
 #include "timecontrol.h"
-
+#include <assert.h>
 //extern gameState gs;
 
 U64 nodes[]= { 0, 20, 400, 8902, 197281, 4865609, 119060324};

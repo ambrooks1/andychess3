@@ -23,13 +23,14 @@
 #include "make_test.h"
 #include "SEE_test.h"
 #include "book.h"
+#include "engine2.h"
 
 extern gameState gs;
 extern bool search_debug;
 U64 total=0;
 
 void run_search( char *fen, char *answer) ;
-static const int depthLevel=7;
+
 
 void hash_test_aux(char moveStr[], int pieceMoving, int victim, int myMoveType) {
 	int move = createMoveFromString(moveStr, pieceMoving, victim, myMoveType);
@@ -366,11 +367,37 @@ void do_eval() {
 	parseFen(fen);
 	getEvaluation();
 }
-int main2(void) {
+
+void repetitionTest() {
+	if (!gs.initialized) return ;
+
+	newGame();
+	printf("Finished initializing\n");
+	char moves[16][5] = { "b1c3","b8c6", "g1f3","g8f6",
+					   "c3b1","c6b8", "f3g1","f6g8",
+					   "b1c3","b8c6", "g1f3","g8f6",
+					   "c3b1","c6b8", "f3g1","f6g8"  };
+
+	for (int i=0; i< 16; i++) {
+		char * move = moves[i];
+		//printf("next move: %s\n", move);
+		//printf("old hash %llu\n", gs.hash);
+		applyMove(move);
+		//printf("new hash %llu\n", gs.hash);
+		//printf("testing move %d = %s\n", i, move);
+		assert(i < 7 || isRepetition());
+		/*
+		if (isRepetition()) {
+			printf("Repetition detected on move %d\n", i);
+		}*/
+	}
+
+}
+int main(void) {
 
 	initializeAll();
 	//printf("Finished initializing\n");
-	checkTest();
+	/*checkTest();
 	illegal_move_test();
 	test_get_legal_moves();
 	 make_test_suite();
@@ -384,16 +411,19 @@ int main2(void) {
     check_evasion_test();
     hash_test();
 	winAtChess();
-	do_eval();
+	do_eval();*/
 
-	/*char fen[] = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+	char fen[] = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 	parseFen(fen);
+
 	char fen2[70];
 	int fenLen=0;
+
 	toFEN(fen2, &fenLen);
-	printf("len=%d fen=%s \n",fenLen, fen2);*/
+	printf("len=%d fen=%s \n",fenLen, fen2);
 
 	//createBook("tiny.book");
+	//repetitionTest();
 	return EXIT_SUCCESS;
 }
 

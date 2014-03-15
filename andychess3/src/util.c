@@ -10,7 +10,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "defs.h"
-#include "assert.h"
+#include <assert.h>
 #include "move.h"
 
 const U64 bitmap1 = C64(0x8080808080808080);
@@ -169,9 +169,7 @@ const char* getSquareFromIndex(int idx) {
 int getIndexFromSquare ( char square[]) {
 	assert(square != NULL);
 
-	unsigned long len = strlen(square);
-	//printf("in getIndexFromSquare; len = %lu\n", len);
-	assert(len==2);
+
 	for (int i=0; i < 64; i++) {
 		if (strcmp(square, squares[i]) == 0) {
 			return i;

@@ -9,8 +9,9 @@
 #include <string.h>
 #include <ctype.h>
 #include <stdbool.h>
-#include "assert.h"
 #include "defs.h"
+#include <assert.h>
+
 #include "util.h"
 #include "movegen.h"
 #include "move.h"

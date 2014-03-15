@@ -1,16 +1,17 @@
 /*
  * engine2.c
+
  *
  *  Created on: Mar 5, 2014
  *      Author: andrewbrooks
  */
+#include "defs.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
 #include <stdbool.h>
-#include "assert.h"
-#include "defs.h"
+#include <assert.h>
 #include "util.h"
 #include "movegen.h"
 #include "move.h"
@@ -86,35 +87,38 @@ void displayLegalMoves(int numLegalMoves, int legalMoves[200]) {
 	}
 }
 
-int  applyMove(char moveStr[])
+void  applyMove(char moveStr[])
 //make the move on our chessboard.
 // note that this could be happening right after we did a search OR
 // in response to getting a move from the opponent
 {
-	if (!gs.initialized) return 0;
+	if (!gs.initialized) return;
 	assert( strlen(moveStr) == 4 || strlen(moveStr)== 5);
 
 	if (numLegalMoves < 1) {
 		write("Game over; no legal moves");
-		return 0;
+		return;
 	}
 	int move = validate(moveStr);
 	if (move == 0) {
 		printf("Illegal move %s\n", moveStr);
 		fflush(stdout);
 		displayLegalMoves(numLegalMoves, legalMoves);
-		return 0;
+		return ;
 	}
 	if (irreversible(move)) {
 		fiftyMoveCounter=0;
 	}
-	make(move);
+	else {
+		fiftyMoveCounter++;
+	}
 	stateHistory[stateHistCtr++]=gs.hash;
+	make(move);
 
 	getLegalMoveList(legalMoves,&numLegalMoves);
 
 	sideToMove = toggle(sideToMove);
-	return move;
+
 }
 
 void findAndApplyMove()
@@ -170,7 +174,6 @@ void newGame() {
 	gs.moveCounter=0;
 
 	parseFen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1");
-	//GameState.stateHistory[GameState.currentPly++]=state.hash;
 
 	getLegalMoveList(legalMoves, &numLegalMoves);
 	outOfBook=false;
@@ -194,7 +197,7 @@ void processMove(char command[80]) {
 		findAndApplyMove();
 }
 
-int main() {
+int main2() {
 
 	char inBuf[80], command[80];
 	int i=0;
@@ -228,11 +231,13 @@ int main() {
 		//if(!strcmp(command, "exit"))    { engineSide = NONE;    continue; }
 		if(!strcmp(command, "otim"))    {
 			sscanf(inBuf, "otim %llu", &opponentTimeLeft);
+			opponentTimeLeft=opponentTimeLeft*10;
 			continue;
 		}
 		if(!strcmp(command, "time"))
 		{
 			sscanf(inBuf, "time %llu", &timeLeft);
+			timeLeft=timeLeft*10;
 			continue;
 		}
 

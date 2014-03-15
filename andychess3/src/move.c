@@ -10,7 +10,7 @@
 #include "move.h"
 #include "defs.h"
 #include "util.h"
-#include "assert.h"
+#include <assert.h>
 
 void printMove(int move) {
 	char s[5];

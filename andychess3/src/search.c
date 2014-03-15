@@ -11,7 +11,7 @@
 #include <time.h>
 #include <ctype.h>
 #include <stdbool.h>
-#include "assert.h"
+
 #include "defs.h"
 #include "search.h"
 #include "timecontrol.h"
@@ -23,10 +23,10 @@
 #include "eval.h"
 #include "movegen.h"
 #include "util.h"
-
+#include <assert.h>
 //void write(char* message);
 
-//bool printLogging=true;
+bool printLogging=true;
 
 extern int fiftyMoveCounter;
 extern int stateHistCtr;
@@ -49,6 +49,7 @@ int depthLevel=7;
 int valWINDOW=35;
 extern bool useTT;
 extern int probes, hits, stores;
+extern int pst_probes, pst_hits, pst_stores;
 extern gameState gs;
 extern const U64 minedBitboards[2][2];
 extern int numBookMovesMade;
@@ -96,7 +97,7 @@ void turnEverythingOn() {
 	deltaPruneOn=true;
 	orderByKillers=true;
 	orderByHistory=true;
-	turnSEEOn=false;
+	turnSEEOn=true;
 }
 
 
@@ -221,9 +222,13 @@ int calcBestMoveAux( int alpha, int beta)  {
 
 	int currentDepth=1;
 
-	int maxIterations=depthLevel;
+	int maxIterations=-1;
 	if (usingTime) {
 		maxIterations=MAXDEPTH;
+	}
+	else {
+		printf("Not using time controls!!\n");
+		maxIterations=7;
 	}
 	//write("# getting time\n");
 	if (usingTime) {
@@ -241,7 +246,7 @@ int calcBestMoveAux( int alpha, int beta)  {
 			U64 elapsedTime = currentTimeMillisecs() - startTime;
 			U64 adjustedTime= elapsedTime * LEVEL_INCREASE_TIME_MULTIPLE;
 			if  (adjustedTime > timeForThisMove) {
-				//if (debug) printLoggingInfo(currentDepth, bestMove, bestScoreForThisIteration);
+				if (printLogging) printLoggingInfo(currentDepth, maxIterations, bestMove, bestScoreForThisIteration);
 				return bestMove;
 			}
 		}
@@ -315,14 +320,14 @@ int calcBestMoveAux( int alpha, int beta)  {
 
 	return bestMove;
 }
-void printLoggingInfo(int currentDepth, int bestMove, int score) {
+void printLoggingInfo(int currentDepth, int maxIterations, int bestMove, int score) {
 	char str[LOGGING_STRING_SIZE];
-	char s[5];
+	char s[6];
 	moveToString(bestMove,s);
 	sprintf(str,
-			"bestmove  %s score %d   currentDepth  %d time for this move %lld   Num regular nodes  = %d   numQuiesNodes %d\n",
+			"bestmove  %s score %d   currentDepth  %d maxIterations %d time for this move %lld   Num regular nodes  = %d   numQuiesNodes %d\n",
 			s, score,
-			currentDepth, timeForThisMove, nodesSearched, numQuiesNodes);
+			currentDepth, maxIterations, timeForThisMove, nodesSearched, numQuiesNodes);
 
 	U64 totalNodes = nodesSearched + numQuiesNodes;
 
@@ -344,6 +349,9 @@ void printLoggingInfo(int currentDepth, int bestMove, int score) {
 	sprintf(str2,"futility Prunes %d usingKillerMoves %d\n", futilityPrune, usingKillerMove);
 	strcat(str, str2);
 
+	sprintf(str2,"passed pawn table : stores %d probes %d  hits%d\n",
+			pst_stores, pst_probes , pst_hits);
+	strcat(str, str2);
 	printf("#%s\n",str);
 	fflush(stdout);
 }
@@ -425,10 +433,11 @@ void displayMoves(int movelist[], int numMoves) {
 }
 bool isRepetition() {
 	int j=0;
-	for (int i=stateHistCtr; i >= 0; i=i-2 ) {
+	U64 hash= gs.hash;
+	for (int i=stateHistCtr-2; i >= 0; i=i-2 ) {
 		if (j >= fiftyMoveCounter) return false;
-		if (i < 0 ) return false;
-		if (stateHistory[i]==gs.hash ) return true;
+		U64 hist = stateHistory[i];
+		if (hist==hash ) return true;
 		j++;
 	}
 	return false;
@@ -451,11 +460,11 @@ int search( int alpha, int beta,
 		}
 	}
 	U64 hash=gs.hash;
-	if (isRepetition()) {
+	/*if (isRepetition()) {
 	  if (!returnBestMove) {
 		  return 0;
 	  }
-	}
+	}*/
 	int flags2=gs.flags;
 	bool foundPv=false;
 

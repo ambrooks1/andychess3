@@ -58,6 +58,9 @@ Time not used on one move does not accumulate for use on later moves.
 #include "defs.h"
 
 extern int movesPerSession;
+extern int baseTime;
+extern int movesPerSession;
+extern int increment;
 
 U64 currentTimeMillisecs() {
 	struct timeval tv;
@@ -96,17 +99,18 @@ const int GUESSEDLENGTH =40;
 
 void setTimeLevel(char *line) {
 	int mps;
-	U64 baseTime, increment;
+	U64 baseTimeLocal, incrementLocal;
 
 	int sec = 0;
 	if (    sscanf(line, "level %d %lld %lld",
-			   &mps, &baseTime, &increment)!=3 &&
+			   &mps, &baseTimeLocal, &incrementLocal)!=3 &&
 	        sscanf(line, "level %d %lld:%d %lld",
-					&mps, &baseTime, &sec, &increment)!=4)
+					&mps, &baseTimeLocal, &sec, &incrementLocal)!=4)
 	{
 		printf ("ERROR in level statement\n");
 		return;
 	}
+	baseTimeLocal=baseTimeLocal * 60 *1000;
 
 	// Get moves per session (0 if not tournament mode)
 	// Get base time in milliseconds
@@ -114,14 +118,10 @@ void setTimeLevel(char *line) {
 	// Add seconds component, if any
 	if(sec > 0)
 	{
-		baseTime += sec * 1000;   // convert to milliseconds
+		baseTimeLocal += sec * 1000;   // convert to milliseconds
 	}
-	//Search2.baseTime=baseTime;
-	// Get move increment from seconds
-	//U64 incrementMilliseconds = increment * 1000;
-	//Search2.increment=increment;
-	// Set clock format on game
-
+	baseTime=baseTimeLocal;
+	increment = incrementLocal;
 
 	//System.out.println("moves per session " + movesPerSession + " baseTime " + baseTime + " increment " + increment);
 
