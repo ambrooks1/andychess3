@@ -249,9 +249,13 @@ static void test_get_legal_moves() {
 
 	char fen[]="6k1/1R3p2/4p1p1/p1r3Pp/8/2PR3P/r4P2/5K2 b - - 0 44";
 	testAux(fen, 27);
+
+	char fen3[]="8/5k1p/5Pp1/1p1pr3/2r4P/Pp2PB2/1Kb1P3/2R4R w - - 1 43";
+	testAux(fen3, 22);
+
+	char fen5[]="3r2k1/5pp1/1p2p3/p1nrP2p/P1p5/5N1P/1PP2PP1/R3R1K1 b - - 3 25";
+	testAux(fen3, 31);
 }
-
-
 
 void illegal_move_test() {    // make sure it picks up illegal moves
 	/*	assert(gs.initialized);
@@ -372,7 +376,7 @@ void repetitionTest() {
 	if (!gs.initialized) return ;
 
 	newGame();
-	printf("Finished initializing\n");
+	printf("Repetition Test\n");
 	char moves[16][5] = { "b1c3","b8c6", "g1f3","g8f6",
 					   "c3b1","c6b8", "f3g1","f6g8",
 					   "b1c3","b8c6", "g1f3","g8f6",
@@ -393,14 +397,43 @@ void repetitionTest() {
 	}
 
 }
-int main(void) {
+void bookTest() {
+		printf("book test\n");
+		char fen[] = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+		parseFen(fen);
+		U64 hash = gs.hash;
+
+		printf("first hash = %llu\n", hash);
+		char fen2[70];
+
+
+		toFEN(fen2);
+		printf("fen=%s \n",fen2);
+		parseFen(fen2);
+		U64 hash2 = gs.hash;
+
+		printf("second hash = %llu\n", hash2);
+		assert(hash==hash2);
+	   // printBookMoves();
+		char moveStr[5]="1234";
+
+		getBookMove(hash, moveStr);
+		//printf("The book move is : %s\n", moveStr);
+		assert(
+				(strcmp(moveStr,"e2e4")== 0 ) ||
+				(strcmp(moveStr,"d2d4")== 0 ) ||
+				(strcmp(moveStr,"c2c4")== 0 ) ||
+				(strcmp(moveStr,"g1f3")== 0 ) ||
+				(strcmp(moveStr,"g2g3")== 0 ));
+}
+void do_all_tests(void) {
 
 	initializeAll();
-	//printf("Finished initializing\n");
-	/*checkTest();
+	printf("Finished initializing\n");
+	checkTest();
 	illegal_move_test();
 	test_get_legal_moves();
-	 make_test_suite();
+	/* make_test_suite();
 	see_test_suite();
 
 	check_test();
@@ -411,19 +444,10 @@ int main(void) {
     check_evasion_test();
     hash_test();
 	winAtChess();
-	do_eval();*/
+	do_eval();
 
-	char fen[] = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-	parseFen(fen);
-
-	char fen2[70];
-	int fenLen=0;
-
-	toFEN(fen2, &fenLen);
-	printf("len=%d fen=%s \n",fenLen, fen2);
-
-	//createBook("tiny.book");
-	//repetitionTest();
-	return EXIT_SUCCESS;
+	bookTest();
+	repetitionTest();*/
+	printf("all tests successfully completed\n");
 }
 

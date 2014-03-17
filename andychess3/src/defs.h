@@ -38,6 +38,8 @@ typedef unsigned long long U64 ;
 #define NUMBITBOARDS 15
 
 #define  MAX_PLIES 200
+#define  MOVE_STR_SIZE 6
+#define COMMAND_LINE_LEN 80
 
 #define  WKSIDE 0
 #define  WQSIDE 1
@@ -68,17 +70,20 @@ typedef unsigned long long U64 ;
 #define  KNIGHT_VALUE  325
 #define  PAWN_VALUE  100
 
-#define PAWN_STRUC_TBL_ENTRIES 500000
-#define TRANS_TBL_ENTRIES 5000000
+#define PAWN_STRUC_TBL_ENTRIES 1000000
+#define TRANS_TBL_ENTRIES      5000000
 
-#define NUM_BOOK_MOVES 3072
+#define NUM_BOOK_MOVES 1535
 #define MAX_MOVES   200// from a given board position
 #define MAX_QUIES_MOVES 100
+#define MAX_DEPTH 50
 
+#define BOOK_MOVE_NOT_FOUND "1234";
 
 typedef struct BookMove {
 	U64 hash;
-	int movelist[10];
+	char movelist[10][5];  // 10 strings each is 4 characters plus a null
+	int numMoves;
 } BookMove;
 
 typedef struct MoveInfo {

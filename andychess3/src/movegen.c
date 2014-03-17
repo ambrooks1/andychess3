@@ -815,7 +815,7 @@ int* isInCheck2( int color, int piece, int type, int kingIdx, U64 allPieces, gam
 void  getLegalCheckEvasions(int moves2[], int* numMoves2)
 	{
 	    int j=0;
-		int moves[200];
+		int moves[MAX_MOVES];
 		int numMoves;
 		//printf("begin getLegalCheckEvasions; gs.color %d\n", gs.color);
 		generateCheckEvasionMoves(gs.color, moves, &numMoves);
@@ -862,7 +862,7 @@ void  getLegalCheckEvasions(int moves2[], int* numMoves2)
 void  getLegalMoveList(int moves2[], int* numMoves2)
 	{
 	    int j=0;
-		int moves[200];
+		int moves[MAX_MOVES];
 		int numMoves;
 		//printf("begin; gs.color %d\n", gs.color);
 		getAllMoves(gs.color, moves, &numMoves);

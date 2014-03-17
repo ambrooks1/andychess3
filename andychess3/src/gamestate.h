@@ -10,7 +10,7 @@
 
 #include <stdbool.h>
 
-void toFEN(char fen[70], int* length);
+
 bool isBitSet(int x, int position);
 int getEPSquare();
 void parseFen2 ( char fen[]);

@@ -54,8 +54,9 @@ extern gameState gs;
 extern const U64 minedBitboards[2][2];
 extern int numBookMovesMade;
 extern const int valueMap[];
+int maxIterations=7;
 
-int         numCutoffs=0,
+int     numCutoffs=0,
 		firstMoveCutoffs=0,
 		nodesSearched=0,
 		numQuiesNodes=0,
@@ -67,9 +68,10 @@ int history[2][64][64];
 
 int killer[MAXDEPTH][NUMKILLERS];
 bool        useIID,do_LMR,
-extensionsOn, futilityOn,
-turnNullOn,deltaPruneOn,positionalEvalOn,orderByHistory,
-orderByKillers,turnSEEOn;
+	extensionsOn, futilityOn,
+	turnNullOn,deltaPruneOn,
+	positionalEvalOn,orderByHistory,
+	orderByKillers,turnSEEOn, usingRepetitionCheck;
 
 bool foundMove=false;
 bool search_debug=false;
@@ -86,6 +88,7 @@ void clearHistory() {
 }
 
 void turnEverythingOn() {
+	usingRepetitionCheck=false;
 	useIID=true;
 	useTT=true;
 	do_LMR=true;
@@ -222,14 +225,7 @@ int calcBestMoveAux( int alpha, int beta)  {
 
 	int currentDepth=1;
 
-	int maxIterations=-1;
-	if (usingTime) {
-		maxIterations=MAXDEPTH;
-	}
-	else {
-		printf("Not using time controls!!\n");
-		maxIterations=7;
-	}
+
 	//write("# getting time\n");
 	if (usingTime) {
 		startTime=currentTimeMillisecs();
@@ -460,11 +456,14 @@ int search( int alpha, int beta,
 		}
 	}
 	U64 hash=gs.hash;
-	/*if (isRepetition()) {
-	  if (!returnBestMove) {
-		  return 0;
-	  }
-	}*/
+	if (usingRepetitionCheck) {
+		if (isRepetition()) {
+			  if (!returnBestMove) {
+				  return 0;
+			  }
+			}
+	}
+
 	int flags2=gs.flags;
 	bool foundPv=false;
 
@@ -982,10 +981,6 @@ bool isCapture(int myMoveType) {
 	default : return false;
 	}
 
-}
-
-void setUsingTime(bool b) {
-	usingTime=b;
 }
 
 int getNextMove(int i, int moves[], int numMoves) {

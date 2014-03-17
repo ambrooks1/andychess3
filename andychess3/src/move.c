@@ -13,7 +13,7 @@
 #include <assert.h>
 
 void printMove(int move) {
-	char s[5];
+	char s[6];
 	moveToString(move, s);
 	printf( "%s\n", s);
 
@@ -119,17 +119,14 @@ bool isMoveString(char command[]) {   // from CPW Engine
 		command[3] >= '1' && command[3] <= '8' &&
 
 			( command[4] == ' ' || command[4] == '\n' || command[4] == 0 ||
-			 command[4] == 'q' ||   command[4] == 'r' ||  command[4] == 'b' || command[4] == 'n' ||
-			 command[4] == 'Q' ||   command[4] == 'R' ||  command[4] == 'B' || command[4] == 'N'
+			 command[4] == 'q' ||   command[4] == 'r' ||  command[4] == 'b' || command[4] == 'n'
+
 					 ) )
 		return true;
 	return false;
 
 }
-int createMoveFromString(char moveStr[], int fromType, int capture, int moveType2)
-
-{
-
+int createMoveFromString(char moveStr[], int fromType, int capture, int moveType2){
 	assert(isMoveString(moveStr));
 	char fromSquare[3], toSquare[3];
 	fromSquare[0]= moveStr[0];
@@ -151,7 +148,7 @@ int createMoveFromString(char moveStr[], int fromType, int capture, int moveType
  *
  * @param   index   array index of position [0-63]
  * @return  file  of the position ['a'-'h']
- */
+
 char toFile(int index)
 {
 	char file = 'a';
@@ -160,39 +157,18 @@ char toFile(int index)
 }
 
 
-/**
+*
  * Gets the rank of the given board[] index
  *
  * @param   index   array index of position [0-63]
  * @return  rank of the position [1-8]
- */
+
 int toRank(int index)
 {
 	return (8 - index/8); // 1-8
-}
+}*/
 
-char promotionConvert(int type, int pieceMoving)
-{
-
-	if (pieceMoving==WP) {
-		switch(type) {
-		case capturePromotionQueen: case simplePromotionQueen : return 'Q';
-		default : return ' ';
-		}
-
-	}
-	else {
-		switch(type) {
-
-		case capturePromotionQueen: case simplePromotionQueen : return 'q';
-		default : return ' ';
-		}
-
-	}
-}
 void moveToString(int move, char s[]) {
-
-
 	strcpy(s, getSquareFromIndex(fromIndex(move)));
 	strcat(s, getSquareFromIndex(toIndex(move)));
 
@@ -200,13 +176,10 @@ void moveToString(int move, char s[]) {
 	int pm = pieceMoving(move);
 
 	if (type == simplePromotionQueen || type == capturePromotionQueen) { //promotion
-		s[4] =  promotionConvert(type, pm);
+		s[4] = 'q';
 		s[5]='\0';
 	}
 	else {
-		s[5]='\0';
+		s[4]='\0';
 	}
 }
-
-
-

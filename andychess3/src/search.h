@@ -8,8 +8,6 @@
 #ifndef SEARCH_H_
 #define SEARCH_H_
 
-#define MAX_DEPTH 200
-
 #define MOVEGEN_CHECK_EVASION_PHASE  	4
 #define MOVEGEN_HASHMOVE2_PHASE  		3
 #define MOVEGEN_NONCAPTURES_PHASE  		2

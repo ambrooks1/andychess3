@@ -8,50 +8,53 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <stdbool.h>
+#include <unistd.h>
+#include <errno.h>
+#include <time.h>
 #include "defs.h"
 #include <string.h>
 #include "gamestate.h"
 #include "util.h"
-
-//public static Map<Long,List<String>> bookMoves = new HashMap<Long, List<String>>();
+#include "move.h"
 
 BookMove bookMoves[NUM_BOOK_MOVES];
 
+int lookupBookMove( U64 hash2);
+bool createdBook=false;
 extern gameState gs;
-void  castlingToString(char castlingStr[5], int *length)
+void  castlingToString(char castlingStr[5])
+{
+
+	bool flag=false;
+	int k=0;
+	for (int i=0; i < 4; i++)
+	{
+		if (isBitSet(gs.flags,i))
 		{
+			switch(i) {
+			case WKSIDE: castlingStr[k++] = 'K';
+			flag=true;
+			break;
+			case WQSIDE: castlingStr[k++] = 'Q';
+			flag=true;
+			break;
+			case BKSIDE: castlingStr[k++] = 'k';
+			flag=true;
+			break;
+			case BQSIDE: castlingStr[k++] = 'q';
+			flag=true;
+			break;
 
-			bool flag=false;
-			int k=0;
-			for (int i=0; i < 4; i++)
-			{
-				if (isBitSet(gs.flags,i))
-				{
-					switch(i) {
-						case WKSIDE: castlingStr[k++] = 'K';
-						flag=true;
-						break;
-						case WQSIDE: castlingStr[k++] = 'Q';
-						flag=true;
-						break;
-						case BKSIDE: castlingStr[k++] = 'k';
-						flag=true;
-						break;
-						case BQSIDE: castlingStr[k++] = 'q';
-						flag=true;
-						break;
-
-					}
-				}
 			}
-			if (!flag)castlingStr[k++] = '-';
-			castlingStr[k]= '\0';
-			*length=k;
 		}
+	}
+	if (!flag)castlingStr[k++] = '-';
+	castlingStr[k]= '\0';
+	//printf("in castlingToString; value = %s\n", castlingStr);
 
+}
 
-
-void toFEN( char FEN[], int *fenLen)
+void toFEN( char FEN[])
 {
 	int fenIdx=0;
 	char board[64];
@@ -92,70 +95,121 @@ void toFEN( char FEN[], int *fenLen)
 
 	fenIdx--;
 	FEN[fenIdx++] =' ';
+    FEN[fenIdx]='\0';
 
 	if (gs.color==WHITE)
-		FEN[fenIdx++]='w';
+		strcat(FEN, "w ");
 	else
-		FEN[fenIdx++]='b';
+		strcat(FEN, "b ");
 
-	FEN[fenIdx++] = ' ';
-	int len=0;
 	char castlingStr[5];
-	castlingToString(castlingStr, &len);
+	castlingToString(castlingStr);
+	//printf("castling Str %s\n", castlingStr);
 	strcat(FEN, castlingStr);
-	fenIdx=fenIdx+len;
 
-	FEN[fenIdx++] = ' ';
+
+	strcat(FEN, " ");
+
 	int epSquare = getEPSquare();
 
 	if (epSquare== 0 ) {
-		FEN[fenIdx++]='-';
+		strcat(FEN, "-");
 	}
 	else {
 		const char * epSq = getSquareFromIndex(63 - epSquare);
-		FEN[fenIdx++]=epSq[0];
-		FEN[fenIdx++]=epSq[1];
+		strcat(FEN, epSq);
+	}
+}
+int compare(BookMove *elem1, BookMove *elem2)
+{
+   if ( elem1->hash < elem2->hash)
+      return -1;
+
+   else if (elem1->hash > elem2->hash)
+      return 1;
+
+   else
+      return 0;
+}
+
+int compareHashes (U64 hash1, U64 hash2) {
+	 if ( hash1 < hash2)
+	      return -1;
+
+	   else if (hash1 > hash2)
+	      return 1;
+
+	   else
+	      return 0;
 	}
 
-	FEN[fenIdx++]='\0';
-	*fenLen=fenIdx;
+void sortBookMoves() {
+	 qsort((void *) &bookMoves,              // Beginning address of array
+	   NUM_BOOK_MOVES,                                 // Number of elements in array
+	   sizeof(BookMove),              // Size of each element
+	   (compfn)compare );
+
 }
 
-int comp (const void * elem1, const void * elem2)
-{
-	int f = *((int*)elem1);
-	int s = *((int*)elem2);
-	if (f > s) return  1;
-	if (f < s) return -1;
-	return 0;
+void printBookMoves() {
+	for (int i= 0; i < 10; i++) {
+			printf("number %d hash %llu  numMoves %d ",
+					i+1, bookMoves[i].hash, bookMoves[i].numMoves);
+			for (int j=0; j < bookMoves[i].numMoves; j++) {
+				 char *p = bookMoves[i].movelist[j];
+				printf("%s ", p);
+			}
+		}
 }
-void sortBookMoves() {
-	qsort (bookMoves, sizeof(bookMoves)/sizeof(*bookMoves), sizeof(*bookMoves), comp);
+void getBookMove(U64 hash, char moveStr[]) {
+	char fen[70];
+
+	toFEN(fen);
+    parseFen(fen);
+	U64 key = gs.hash;
+	//printf("trying to find this hash %llu\n", key);
+
+
+	int index = lookupBookMove(key);
+	if (index == -1) {
+		//printf("Not found\n");
+		return;
+	}
+    BookMove bookmove = bookMoves[index];
+    srand ( time(NULL) );
+    int randIndex = rand() % bookmove.numMoves;
+
+	strcpy(moveStr,bookmove.movelist[randIndex]);
+
+}
+//binary search
+int lookupBookMove( U64 hash2)
+{
+    int mid, result;
+    int high = NUM_BOOK_MOVES - 1;
+    int low = 0;
+
+    while ( low <= high )
+    {
+        mid = (low + high) / 2;
+        result = compareHashes(bookMoves[mid].hash, hash2);
+
+        if (result == -1)
+            low = mid + 1;
+        else if (result == 1)
+            high = mid - 1;
+        else
+            return mid;
+    }
+    return -1;
 }
 /*
-char* randomMove(List<String> moveList) {
-
-		int i = (int) (Math.random() *  ( moveList.size() - 1 ));
-		return moveList.get(i);
-}*/
-
-void getMove(U64 hash, char moveStr[]) {
-	char fen[70];
-	int fenLen=0;
-	toFEN(fen, &fenLen);
-
-
-	//U64 key = gs.hash;
-	/*
-	if (bookMoves.containsKey(key)) {
-		List<String> moveList = bookMoves.get(key);
-		return randomMove(moveList);
-	}
-	else {
-		return null;
-	}*/
+ * typedef struct BookMove {
+	U64 hash;
+	char movelist[10][5];  // 10 strings each is 4 characters plus a null
+	int numMoves;
 }
-
+ */
 void createBook(char *fileName)
 {
 	// input : alternate lines that look like this :
@@ -163,40 +217,74 @@ void createBook(char *fileName)
 	//rnbqkbnr/ppp1pppp/8/3p4/8/1P6/P1PPPPPP/RNBQKBNR w KQkq d6
 	//g8f6{1544} d7d5{506} e7e6{41} f7f5{30} d7d6{10} g7g6{10}
 
+	char cwd[1024];
+	if (getcwd(cwd, sizeof(cwd)) != NULL) {
+		printf("#Current working dir: %s\n", cwd);
+		fflush(stdout);
+	}
+	else {
+		printf("#getcwd() error\n");
+		fflush(stdout);
+	}
+
 	FILE* file = fopen(fileName, "r");  //should check the result
 	if (file == NULL) {
-		printf ("File not created okay, errno = %d\n", errno);
+		printf ("#Opening book file %s could not be opened for reading %s\n",
+				fileName, strerror(errno));
+		fflush(stdout);
 		return ;
 	}
 	char line[256];
 	bool isFen=true;
 	char* delims = "[{ }]+";
-
+	int bookMovesIdx=0;
 	U64 hash=0;
 	while (fgets(line, sizeof(line), file))
 	{
 		//note that fgets don't strip the terminating \n, checking its
 		//  presence would allow to handle lines longer that sizeof(line)
-		printf("%s", line);
+		//printf("%d %s", bookMovesIdx, line);
 		if (strcmp(line,"#END#")==0) {
 			break;
 		}
+
 		if (isFen) {
+
 			parseFen(line);
 			hash = gs.hash;
+			bookMoves[bookMovesIdx].hash=hash;
 			isFen=false;
 		}
-		else {
+		else
+		{
 			char *token;
 			/* get the first token */
+
 			token = strtok(line, delims);
 			/* walk through other tokens */
+			int k=0;   // k indexes the tokens
 			while( token != NULL ) {
-				printf( "token: %s\n", token );
+
+				//printf( "token: %s\n", token );
+				if (isMoveString(token)) {
+					//printf("*** IS a move: %s\n", token);
+					for (int i=0; i < 5;i++)
+					  bookMoves[bookMovesIdx].movelist[k][i]=token[i];
+					  k++;
+				}
+				else {
+					//printf("not a move: %s\n", token);
+				}
 				token = strtok(NULL, delims);
 			}
+			bookMoves[bookMovesIdx].numMoves=k;
+			bookMovesIdx++;
 			isFen=true;
+
 		}
 	}
+	//printBookMoves();
+	sortBookMoves();
+	createdBook=true;
 }
 

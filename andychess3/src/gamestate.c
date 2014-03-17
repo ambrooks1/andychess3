@@ -22,6 +22,7 @@
 #include "magic.h"
 #include "eval.h"
 #include "gamestate.h"
+#include "book.h"
 
 const U64 XYA =  C64(6);
 const U64 XYB =  C64(112);
@@ -1200,6 +1201,11 @@ void initializeAll() {
 	initializeEval();
 	initializeFlags();
 	initializeZobrist();
+	createBook("tiny.book");
+
+
+
+
 	gs.initialized=true;
 }
 
