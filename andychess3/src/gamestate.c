@@ -24,26 +24,17 @@
 #include "gamestate.h"
 #include "book.h"
 
-const U64 XYA =  C64(6);
-const U64 XYB =  C64(112);
-const U64 XYC =  C64(432345564227567616);
-const U64 XYD =  C64(8070450532247928832);
 
-const U64 castlingBitboards[] =  {XYA, XYB, XYC, XYD};
 const U64 minedBitboards[2][2] = { { C64(4), C64(16)}, {  C64(288230376151711744),  C64(1152921504606846976)}};
-const int castleRook[]={WR,BR};
+
 const int valueMap[] = { PAWN_VALUE, PAWN_VALUE, KNIGHT_VALUE,  KNIGHT_VALUE,
 		BISHOP_VALUE, 	BISHOP_VALUE,   ROOK_VALUE, ROOK_VALUE,  QUEEN_VALUE , QUEEN_VALUE};
 
-const int pp[]={WQ, BQ};
+
 int kingSideFlags[2];
 
 int queenSideFlags[2];
 
-const int rookHomeQS[] = { 56, 0 };
-const int rookHomeKS[] = { 63, 7};
-const int kingHome[] = { 60, 4 };
-const int king[] = { WK,BK };
 const int ksFromRook[]={63, 7};
 const int ksToRook[]  ={61, 5};
 
@@ -53,7 +44,7 @@ const int  qsFromRook[]={56, 0};
 const int  qsToRook[]  ={59, 3};
 const U64 qsRookFrom[]={ C64(128) , C64(-9223372036854775808)  };
 const U64 qsRookTo[]={ C64(16) , C64(1152921504606846976) };
-const int pawn[]={WP, BP};
+
 const int lowerBound[] = {8, 48};
 const int upperBound[] = { 15, 55};
 const int offset2[]={8, -8};
@@ -402,7 +393,7 @@ bool canCastle(int index, U64 allPieces) {
 
 			Also, you cannot castle out of check
 	 */
-
+	const U64 castlingBitboards[] =  { C64(6), C64(112),  C64(432345564227567616), C64(8070450532247928832)};
 	if  (!( ( ( gs.flags >> index ) & 1 ) != 0 )) //bit is not set
 		return false;
 	U64 x = castlingBitboards[index] & allPieces;
@@ -551,7 +542,15 @@ int reversePSTValue(int pieceMoving, int to, int from) {
 	return 0;
 }
 void make(int move) {
-	assert ( move != 0);
+	//assert ( move != 0);
+
+	const int castleRook[]={WR,BR};
+	const int pp[]={WQ, BQ};
+	const int kingHome[] = { 60, 4 };
+	const int king[] = { WK,BK };
+
+	const int rookHomeQS[] = { 56, 0 };
+	const int rookHomeKS[] = { 63, 7};
 
 	int oldCsState[2];
 	int newCsState[2];
@@ -739,7 +738,7 @@ void make(int move) {
 
 		U64 notFromBB=~fromBB;
 
-		int myPawn= pawn[gs.color];
+		int myPawn= WP+gs.color;
 
 		gs.bitboard[myPawn] &=  notFromBB;    //clear bit of myPieceMoving
 		gs.bitboard[movingPieces] &=  notFromBB;    //clear bit of myPieces
@@ -810,7 +809,7 @@ void make(int move) {
 		break;
 	default :
 		printf("Illegal move type in make");
-		char s[5];
+		char s[MOVE_STR_SIZE];
 		moveToString(move,s);
 		printf("%s\n",s);
 		printf("movetype %d" , moveType(move));
@@ -1201,12 +1200,9 @@ void initializeAll() {
 	initializeEval();
 	initializeFlags();
 	initializeZobrist();
+	gs.initialized=true;
 	createBook("tiny.book");
 
-
-
-
-	gs.initialized=true;
 }
 
 

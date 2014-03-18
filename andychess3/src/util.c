@@ -43,7 +43,7 @@ int popCount (U64 x) {
    return count;
 }
 
-const int index64[64] = {
+/*const int index64[64] = {
     0,  1, 48,  2, 57, 49, 28,  3,
    61, 58, 50, 42, 38, 29, 17,  4,
    62, 55, 59, 36, 53, 51, 43, 22,
@@ -52,7 +52,7 @@ const int index64[64] = {
    54, 35, 52, 21, 44, 32, 23, 11,
    46, 26, 40, 15, 34, 20, 31, 10,
    25, 14, 19,  9, 13,  8,  7,  6
-};
+};*/
 
 int* getInBetweenSquares(int from, int to) {
 			//get the indices of squares between and not including from and to
@@ -111,12 +111,34 @@ U64 inBetweenWithoutLookup(int sq1, int sq2)
  * @precondition bb != 0
  * @return index (0..63) of least significant one bit
  */
-int bitScanForward(U64 bb) {
+/*int bitScanForward(U64 bb) {
    const U64 debruijn64 = C64(0x03f79d71b4cb0a89);
    assert (bb != 0);
    return index64[((bb & -bb) * debruijn64) >> 58];
-}
+}*/
+const int index64[64] = {
+    0, 47,  1, 56, 48, 27,  2, 60,
+   57, 49, 41, 37, 28, 16,  3, 61,
+   54, 58, 35, 52, 50, 42, 21, 44,
+   38, 32, 29, 23, 17, 11,  4, 62,
+   46, 55, 26, 59, 40, 36, 15, 53,
+   34, 51, 20, 43, 31, 22, 10, 45,
+   25, 39, 14, 33, 19, 30,  9, 24,
+   13, 18,  8, 12,  7,  6,  5, 63
+};
 
+/**
+ * bitScanForward
+ * @author Kim Walisch (2012)
+ * @param bb bitboard to scan
+ * @precondition bb != 0
+ * @return index (0..63) of least significant one bit
+ */
+int bitScanForward(U64 bb) {
+   const U64 debruijn64 = C64(0x03f79d71b4cb0a89);
+   assert (bb != 0);
+   return index64[((bb ^ (bb-1)) * debruijn64) >> 58];
+}
 const char pieces[12] = { 'P', 'p', 'N', 'n', 'B', 'b', 'R', 'r', 'Q', 'q','K','k' };
 
 char reverseConvertPiece(int i) {

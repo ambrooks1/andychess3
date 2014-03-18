@@ -9,8 +9,6 @@
 #ifndef DEFS_H_
 #define  DEFS_H_
 
-#define NDEBUG
-
 typedef unsigned long long U64 ;
 #define C64(constantU64) constantU64##ULL
 
@@ -70,13 +68,13 @@ typedef unsigned long long U64 ;
 #define  KNIGHT_VALUE  325
 #define  PAWN_VALUE  100
 
-#define PAWN_STRUC_TBL_ENTRIES 1000000
+#define PAWN_STRUC_TBL_ENTRIES  500000
 #define TRANS_TBL_ENTRIES      5000000
 
 #define NUM_BOOK_MOVES 1535
 #define MAX_MOVES   200// from a given board position
 #define MAX_QUIES_MOVES 100
-#define MAX_DEPTH 50
+#define MAX_DEPTH 200
 
 #define BOOK_MOVE_NOT_FOUND "1234";
 

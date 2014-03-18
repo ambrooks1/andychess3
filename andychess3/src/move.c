@@ -13,7 +13,7 @@
 #include <assert.h>
 
 void printMove(int move) {
-	char s[6];
+	char s[MOVE_STR_SIZE];
 	moveToString(move, s);
 	printf( "%s\n", s);
 
@@ -142,44 +142,14 @@ int createMoveFromString(char moveStr[], int fromType, int capture, int moveType
 
 	return createMove(fromType, fromIndex, toIndex, capture, moveType2, 0);
 }
-// END createMove
-/**
- * Gets the file of the given board[] index
- *
- * @param   index   array index of position [0-63]
- * @return  file  of the position ['a'-'h']
 
-char toFile(int index)
-{
-	char file = 'a';
-	file += index %  8; // += 0-7
-	return file;
-}
-
-
-*
- * Gets the rank of the given board[] index
- *
- * @param   index   array index of position [0-63]
- * @return  rank of the position [1-8]
-
-int toRank(int index)
-{
-	return (8 - index/8); // 1-8
-}*/
 
 void moveToString(int move, char s[]) {
 	strcpy(s, getSquareFromIndex(fromIndex(move)));
 	strcat(s, getSquareFromIndex(toIndex(move)));
 
 	int type = moveType(move);
-	int pm = pieceMoving(move);
-
 	if (type == simplePromotionQueen || type == capturePromotionQueen) { //promotion
-		s[4] = 'q';
-		s[5]='\0';
-	}
-	else {
-		s[4]='\0';
+		strcat(s, "q");
 	}
 }

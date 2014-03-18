@@ -254,7 +254,7 @@ static void test_get_legal_moves() {
 	testAux(fen3, 22);
 
 	char fen5[]="3r2k1/5pp1/1p2p3/p1nrP2p/P1p5/5N1P/1PP2PP1/R3R1K1 b - - 3 25";
-	testAux(fen3, 31);
+	testAux(fen5, 31);
 }
 
 void illegal_move_test() {    // make sure it picks up illegal moves
@@ -269,6 +269,15 @@ void illegal_move_test() {    // make sure it picks up illegal moves
 	 */
 }
 
+static void execute2(char fen[]) {
+	parseFen(fen);
+	search_debug=true;
+
+	char moveStr[6];
+
+	calcBestMove( moveStr);
+	printf("new move = %s\n", moveStr);
+}
 static  void execute(char *answer) {
 
 	U64 start = currentTimeMillisecs() ;
@@ -372,7 +381,7 @@ void do_eval() {
 	getEvaluation();
 }
 
-void repetitionTest() {
+/*void repetitionTest() {
 	if (!gs.initialized) return ;
 
 	newGame();
@@ -390,13 +399,13 @@ void repetitionTest() {
 		//printf("new hash %llu\n", gs.hash);
 		//printf("testing move %d = %s\n", i, move);
 		assert(i < 7 || isRepetition());
-		/*
+
 		if (isRepetition()) {
 			printf("Repetition detected on move %d\n", i);
-		}*/
+		}
 	}
 
-}
+}*/
 void bookTest() {
 		printf("book test\n");
 		char fen[] = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
@@ -433,7 +442,7 @@ void do_all_tests(void) {
 	checkTest();
 	illegal_move_test();
 	test_get_legal_moves();
-	/* make_test_suite();
+	 make_test_suite();
 	see_test_suite();
 
 	check_test();
@@ -444,10 +453,11 @@ void do_all_tests(void) {
     check_evasion_test();
     hash_test();
 	winAtChess();
+
 	do_eval();
 
-	bookTest();
-	repetitionTest();*/
+	//bookTest();
+	//repetitionTest();
 	printf("all tests successfully completed\n");
 }
 

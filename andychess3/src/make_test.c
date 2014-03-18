@@ -107,7 +107,7 @@ void enPassantTestBlack2() {
 }
 void simplePromotionTestWhite() {
 	char s[] = "rnbqkb1r/1p1pppPp/p4n2/8/8/8/PP2PPP1/RNBK1BNR w kq - 1 8";
-	char textMove[]= "g7g8Q";
+	char textMove[]= "g7g8q";
 	int myFromType=WP;
 	int victim=0;
 	parseFen(s);
@@ -171,7 +171,7 @@ void promotionTestWhite() {
 	char fen[] = "5B2/6P1/1p6/8/1N6/kP6/2K5/8 w - - 0 1";
 	parseFen(fen);
 
-	char moveStr[]= "g7g8Q";
+	char moveStr[]= "g7g8q";
 	int move = createMoveFromString(moveStr, WP, 0, simplePromotionQueen);
 	make(move);
 	int cnt = popCount(gs.bitboard[WQ]);

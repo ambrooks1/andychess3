@@ -67,25 +67,28 @@ void insertXRayAttacker(int side, int attackers[][16], int ptr[],
 }
 void getXRayAttackerRook( U64 all, int i, U64 blockers[], int attackingColor, int vertXRayAttacker[][2]) {
 	//blockers should be rooks, queens
+	int blocker, victimSquare, victim, idx, attackerSquare, attacker;
+	U64 xray;
+
 	for (int j=0; j < 2; j++) {
-		U64 xray = xrayRookAttacks(all ,blockers[j], i) ;
-		int victimSquare=63-i;
-		int victim= gs.board[victimSquare];
+		xray = xrayRookAttacks(all ,blockers[j], i) ;
+		victimSquare=63-i;
+		victim= gs.board[victimSquare];
 		if (victim == -1 || victim == attackingColor) return ;
 
 
 		while (xray) {
-			int idx = bitScanForward(xray);
-			int attackerSquare=63-idx;
+			idx = bitScanForward(xray);
+			attackerSquare=63-idx;
 
-			int attacker = gs.board[attackerSquare];
+			attacker = gs.board[attackerSquare];
 
 			if ( (attacker != (WR+attackingColor)) && ( attacker != (WQ+attackingColor)   )     )  {
 				xray = xray & ( xray - 1 );
 				continue;
 			}
 
-			int blocker=WR+attackingColor;
+			blocker=WR+attackingColor;
 			if (j==1) blocker=WQ+attackingColor;
 
 			vertXRayAttacker[attackingColor][0]=attacker;
@@ -98,26 +101,27 @@ void getXRayAttackerRook( U64 all, int i, U64 blockers[], int attackingColor, in
 
 void  getXRayAttackerBishop( U64 all, int i, U64 blockers[], int attackingColor, int diagXRayAttacker[][2]) {
 	//blockers should be queens, rooks
+	int blocker, victimSquare, victim, idx, attackerSquare, attacker;
+	U64 xray;
 
 	for (int j=0; j < 2; j++) {
-		U64 xray = xrayBishopAttacks(all ,blockers[j], i) ;
-		int victimSquare=63-i;
-		int victim= gs.board[victimSquare];
+		xray = xrayBishopAttacks(all ,blockers[j], i) ;
+		victimSquare=63-i;
+		victim= gs.board[victimSquare];
 		if (victim == -1 || victim == attackingColor) return ;
 
 
 		while (xray) {
-			int idx = bitScanForward(xray);
-			int attackerSquare=63-idx;
+			idx = bitScanForward(xray);
+			attackerSquare=63-idx;
 
-			int attacker = gs.board[attackerSquare];
+			attacker = gs.board[attackerSquare];
 
 			if ( (attacker != (WB+attackingColor)) && ( attacker != (WQ+attackingColor)   )     )  {
 				xray = xray & ( xray - 1 );
 				continue;
 			}
 
-			int blocker;
 
 			if (j==0) blocker=WB+attackingColor;
 			else
@@ -234,12 +238,13 @@ int see( int move, int side)  // the side that is moving
 
 	int value=0;
 	int origSide=side;
+	int value2, piece;
 
 	while ( ptr[side] >= 0 ) {
 		if (victim == -1 || victim >= 10)  break;
-		int piece= attackers[side][ptr[side]];
+		piece= attackers[side][ptr[side]];
 		ptr[side]--;
-		int value2 = valueMap[victim];
+		value2 = valueMap[victim];
 
 		if (side == 0) {
 			value += value2;
@@ -268,11 +273,7 @@ void getRegularAttackers( int to, U64 allPieces,
 
 	//int[2][16] attackers;     colors, pieces
 
-	for (int i=0; i < 2; i++ ) {
-		for (int j=0; j < 16; j++ ) {
-			attackers[i][j]=-1;
-		}
-	}
+
 	U64 kingAttacks =  kingMoveArray[to];
 	U64 bishopAttacks= getBishopAttacks(to, allPieces);
 	U64 rookAttacks = getRookAttacks(to,allPieces);
@@ -318,7 +319,7 @@ void getRegularAttackers( int to, U64 allPieces,
 		attackers[1][++ptr[1]]= BP;
 
 }
-
+//used for testing
 int evaluate2(int side, int victim, int attackers[][16],  int ptr[]) {
 	const int valueMap[] = { 100, 100, 325,  325,
 			350, 	350,  500,

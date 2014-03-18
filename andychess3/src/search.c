@@ -44,7 +44,6 @@ U64 opponentTimeLeft=0;     // time left for the opponent
 U64 timeForThisMove;
 bool  stopSearch = true;
 U64 startTime=0;
-int depthLevel=7;
 
 int valWINDOW=35;
 extern bool useTT;
@@ -185,7 +184,7 @@ void makeMoveInfo(int movelist[], MoveInfo movelist2[],  int cntMoves) {
 
 void printMovelist(MoveInfo mi[], int cntMoves) {
 	printf("do it**********\n");
-	char s[5];
+	char s[MOVE_STR_SIZE];
 	for (int i=0; i < cntMoves; i++)
 	{
 		moveToString(mi[i].move, s );
@@ -274,7 +273,7 @@ int calcBestMoveAux( int alpha, int beta)  {
 			unmake(move, flags2, hash);
 
 		/*	if (search_debug) {
-				char s[5];
+				char s[6];
 				moveToString(move,s);
 				printf("Level  %d  move %s value %d bestval %d alpha %d beta %d\n",
 						currentDepth, s,
@@ -318,7 +317,7 @@ int calcBestMoveAux( int alpha, int beta)  {
 }
 void printLoggingInfo(int currentDepth, int maxIterations, int bestMove, int score) {
 	char str[LOGGING_STRING_SIZE];
-	char s[6];
+	char s[MOVE_STR_SIZE];
 	moveToString(bestMove,s);
 	sprintf(str,
 			"bestmove  %s score %d   currentDepth  %d maxIterations %d time for this move %lld   Num regular nodes  = %d   numQuiesNodes %d\n",

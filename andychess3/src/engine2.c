@@ -24,6 +24,13 @@
 #include "book.h"
 #include "tester.h"
 
+typedef struct saveMove {
+	int move;
+	int flags;
+	U64 hash;
+} saveMove;
+void takeBack(int count) ;
+
 #define  NONE -1
 extern gameState gs;
 extern bool usingTime;
@@ -31,6 +38,8 @@ extern U64 opponentTimeLeft;
 extern U64 timeLeft;
 extern int usingRepetitionCheck;
 extern int maxIterations;
+
+int xboardVersion;
 
 U64 stateHistory[200];  // every new game state hash, actually played, goes in here
 int stateHistCtr = 0;    // state HistoryCounter, incremented for every move played on the board
@@ -59,6 +68,9 @@ bool irreversible(int move) {
 	return true;
 }
 
+saveMove sm[MAX_DEPTH];
+int moveCounter=-1;
+
 void write(char* message)
 {
 	printf("%s\n",message);
@@ -68,7 +80,10 @@ void write(char* message)
 int toggle(int stm) {
 	return ( 1 - stm);
 }
-
+int toggleBoolean(bool b) {
+	if (b) return false;
+	else return true;
+}
 
 int  validate(char moveStr[]) {
 	for (int i=0; i < numLegalMoves; i++) {
@@ -121,6 +136,10 @@ void  applyMove(char moveStr[])
 		}
 		stateHistory[stateHistCtr++]=gs.hash;
 	}
+	moveCounter++;
+	sm[moveCounter].hash=gs.hash;
+	sm[moveCounter].flags=gs.flags;
+	sm[moveCounter].move=move;
 
 	make(move);
 
@@ -160,13 +179,32 @@ void findAndApplyMove()
 	}
 	else
 		//write("# Doing  calcBestMove");
-	calcBestMove( bestmove);
+		calcBestMove( bestmove);
 	//write("# Did calcBestMove; doing apply move ");
 	applyMove(bestmove);
 	//write("# Did  applymove");
 	printf("move %s\n" , bestmove);
 	fflush(stdout);
 	myTurn=false;
+}
+
+void takeBack(int count) {
+	assert(moveCounter > 1);
+
+	if (usingRepetitionCheck) {
+		if (fiftyMoveCounter > 0) {
+			fiftyMoveCounter=0;
+		}
+		if (stateHistCtr > 0)
+			stateHistCtr--;
+	}
+
+	unmake(sm[moveCounter].move,sm[moveCounter].flags, sm[moveCounter].hash);
+	moveCounter--;
+	getLegalMoveList(legalMoves,&numLegalMoves);
+
+	sideToMove = toggle(sideToMove);
+	myTurn=toggleBoolean(myTurn);
 }
 
 void newGame() {
@@ -195,11 +233,17 @@ void newGame() {
 
 	getLegalMoveList(legalMoves, &numLegalMoves);
 	if (createdBook)
-	  outOfBook=false;
+		outOfBook=false;
 	else
-	  outOfBook=true;
+		outOfBook=true;
 	sideToMove=WHITE;
-	computerSide=BLACK;
+	if (computerSide==NONE) {
+		computerSide=BLACK;
+		myTurn=false;
+	}
+
+	memset(sm,0,sizeof(sm));
+	moveCounter=0;
 }
 
 void processMove(char command[COMMAND_LINE_LEN]) {
@@ -215,106 +259,135 @@ void processMove(char command[COMMAND_LINE_LEN]) {
 	}
 }
 void play_chess() {
-		char inBuf[COMMAND_LINE_LEN], command[COMMAND_LINE_LEN];
-		int i=0;
-		initializeAll();
-		signal(SIGTERM, SIG_IGN);
-		signal(SIGINT, SIG_IGN);
+	char inBuf[COMMAND_LINE_LEN], command[COMMAND_LINE_LEN];
+	int i=0;
+	initializeAll();
+	signal(SIGTERM, SIG_IGN);
+	signal(SIGINT, SIG_IGN);
 
-		printf("Welcome to Javalin Chess Engine %s\n", version);
-		fflush(stdout);
+	printf("Welcome to Javalin Chess Engine %s\n", version);
+	fflush(stdout);
 
-		write("Type 'new' to start a new game, or 'quit' to end.");
-		write("Then input a move ( Ex. 'e2e4' ) .");
+	write("Type 'new' to start a new game, or 'quit' to end.");
+	write("Then input a move ( Ex. 'e2e4' ) .");
 
-		while (1) {
-			fflush(stdout);                 // make sure everything is printed before we do something that might take time
+	while (1) {
+		fflush(stdout);                 // make sure everything is printed before we do something that might take time
 
-			// wait for input, and read it until we have collected a complete line
-			for(i = 0; (inBuf[i] = getchar()) != '\n'; i++);
-			inBuf[i+1] = 0;
+		// wait for input, and read it until we have collected a complete line
+		for(i = 0; (inBuf[i] = getchar()) != '\n'; i++);
+		inBuf[i+1] = 0;
 
-			// extract the first word
-			sscanf(inBuf, "%s", command);
+		// extract the first word
+		sscanf(inBuf, "%s", command);
 
-			if(!strcmp(command, "quit"))    { break; } // breaks out of infinite loop
-			if(!strcmp(command, "force"))   {
-				forceMode=true;
-				computerSide=NONE;
-				continue;
-			}
-			//if(!strcmp(command, "analyze")) { engineSide = ANALYZE; continue; }
-			//if(!strcmp(command, "exit"))    { engineSide = NONE;    continue; }
-			if(!strcmp(command, "otim"))    {
-				sscanf(inBuf, "otim %llu", &opponentTimeLeft);
-				opponentTimeLeft=opponentTimeLeft*10;
-				continue;
-			}
-			if(!strcmp(command, "time"))
-			{
-				sscanf(inBuf, "time %llu", &timeLeft);
-				timeLeft=timeLeft*10;
-				continue;
-			}
-
-			if(!strcmp(command, "level"))   {
-				usingTime=true;
-				maxIterations=MAX_DEPTH;
-				setTimeLevel(inBuf);
-				continue;
-			}
-
-			if(!strcmp(command, "protover 2")){
-				write("feature setboard=1 analyze=0 variants=\"normal\" colors=0 debug=1 done=1 sigterm=0 sigint=0");
-				continue;
-			}
-
-			if(!strcmp(command, "sd"))      { sscanf(inBuf, "sd %d", &maxIterations);    continue; }
-			if(!strcmp(command, "st"))      {
-				//sscanf(inBuf, "st %d", &timePerMove); continue;
-				usingTime=true;
-				maxIterations=MAX_DEPTH;
-			}
-
-			if(!strcmp(command, "ping"))    { printf("pong%s", inBuf+4); continue; }
-			//  if(!strcmp(command, ""))        { sscanf(inBuf, " %d", &); continue; }
-
-			if(!strcmp(command, "new"))     {
-				newGame();
-				continue;
-			}
-
-			if(!strcmp(command, "go"))
-			{
-				if (sideToMove==NONE) {
-					sideToMove=WHITE;
-				}
-				forceMode=false;
-				computerSide=sideToMove;
-				myTurn=true;
-				findAndApplyMove();
-				continue;
-			}
-
-
-			if(!strcmp(command, "book"))    {  continue; }
-			// ignored commands:
-			if(!strcmp(command, "xboard"))  {
-				usingTime=true;
-				continue;
-			}
-			if(!strcmp(command, "computer")){ continue; }
-			if(!strcmp(command, "name"))    { continue; }
-			if(!strcmp(command, "ics"))     { continue; }
-			if(!strcmp(command, "accepted")){ continue; }
-			if(!strcmp(command, "rejected")){ continue; }
-			if(!strcmp(command, "variant")) { continue; }
-			if(!strcmp(command, ""))  {  continue; }
-
-			if (isMoveString(command)) {
-				processMove(command);
-			}
+		if(!strcmp(command, "quit"))    { break; } // breaks out of infinite loop
+		if(!strcmp(command, "force"))   {
+			forceMode=true;
+			computerSide=NONE;
+			continue;
 		}
+		if(!strcmp(command, "undo"))
+		{
+			takeBack(1);
+			continue;
+		}
+		if(!strcmp(command, "remove"))
+		{
+			takeBack(2);
+			continue;
+		}
+		//if(!strcmp(command, "analyze")) { engineSide = ANALYZE; continue; }
+		//if(!strcmp(command, "exit"))    { engineSide = NONE;    continue; }
+		if(!strcmp(command, "otim"))    {
+			sscanf(inBuf, "otim %llu", &opponentTimeLeft);
+			opponentTimeLeft=opponentTimeLeft*10;
+			continue;
+		}
+		if (!strcmp(command,"black")) {
+			//Set Black on move. Set the engine to play White
+			sideToMove=BLACK;
+			computerSide=WHITE;
+			myTurn=false;
+			continue;
+		}
+		if (!strcmp(command,"white")) {
+			//Set White on move. Set the engine to play Black.
+			sideToMove=WHITE;
+			computerSide=BLACK;
+			myTurn=false;
+			continue;
+		}
+		if(!strcmp(command, "time"))
+		{
+			sscanf(inBuf, "time %llu", &timeLeft);
+			timeLeft=timeLeft*10;
+			continue;
+		}
+
+		if(!strcmp(command, "level"))   {
+			usingTime=true;
+			maxIterations=MAX_DEPTH;
+			setTimeLevel(inBuf);
+			continue;
+		}
+
+		if(!strcmp(command, "protover")){
+			sscanf(inBuf, "protover %d", &xboardVersion);
+			write("feature setboard=1 analyze=0 variants=\"normal\" colors=0 debug=1 done=1 sigterm=0 sigint=0 myname=javalin2.0");
+			continue;
+		}
+
+		if(!strcmp(command, "sd"))      { sscanf(inBuf, "sd %d", &maxIterations);    continue; }
+		if(!strcmp(command, "st"))      {
+			//sscanf(inBuf, "st %d", &timePerMove); continue;
+			usingTime=true;
+			maxIterations=MAX_DEPTH;
+		}
+
+		if(!strcmp(command, "ping"))    { printf("pong%s", inBuf+4); continue; }
+		//  if(!strcmp(command, ""))        { sscanf(inBuf, " %d", &); continue; }
+
+		if(!strcmp(command, "new"))     {
+			newGame();
+			continue;
+		}
+
+		if(!strcmp(command, "go"))
+		{
+			if (sideToMove==NONE) {
+				sideToMove=WHITE;
+			}
+			forceMode=false;
+			computerSide=sideToMove;
+			myTurn=true;
+			findAndApplyMove();
+			continue;
+		}
+
+
+		if(!strcmp(command, "book"))    {  continue; }
+		// ignored commands:
+		if(!strcmp(command, "xboard"))  {
+			usingTime=true;
+			continue;
+		}
+		if(!strcmp(command, "computer")){ continue; }
+		if(!strcmp(command, "post")){
+			//turn on pondering
+			continue;
+		}
+		if(!strcmp(command, "name"))    { continue; }
+		if(!strcmp(command, "ics"))     { continue; }
+		if(!strcmp(command, "accepted")){ continue; }
+		if(!strcmp(command, "rejected")){ continue; }
+		if(!strcmp(command, "variant")) { continue; }
+		if(!strcmp(command, ""))  {  continue; }
+
+		if (isMoveString(command)) {
+			processMove(command);
+		}
+	}
 }
 int main() {
 	//do_all_tests();
