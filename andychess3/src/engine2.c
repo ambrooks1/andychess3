@@ -390,7 +390,9 @@ void play_chess() {
 	}
 }
 int main() {
-	//do_all_tests();
-	play_chess();
+	if (testing)
+		do_all_tests();
+	else
+		play_chess();
 	return 0;
 }

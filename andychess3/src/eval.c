@@ -13,30 +13,12 @@
 #include "movegen.h"
 #include "pawnStructureTable.h"
 
-const U64  wreckedKSPawnShield[] = { C64(50331648), C64(12884901888)   };
-const U64  wreckedQSPawnShield[] = { C64(3221225472), C64(824633720832)   };
-const U64 safeMiddleGameKingSquares[] = {C64(107), C64(7710162562058289152)    };
 
-const U64  ksCastled[]={C64(7),  C64(504403158265495552)};
-const U64  qsCastled[]={C64(224), C64(2305843009213693952)};
 
-const U64 seventhRank[] = { RANK7, RANK2};
-const U64 kingsideMask[] =  { C64(67569408), C64(1978038598238208)}; // white, black
-const U64 queensideMask[] = { C64(551608320), C64(63296822826762240)}; // white, black
-const U64 whiteKSpawnShields[] = { C64(57344), C64(132352), C64(67072), C64(262912),  C64(67109632)  };	 //best, fianchetto, best w/h3, best w/f3, best w/f4
-const U64 whiteQSpawnShields[] = { C64(1792), C64(8413184), C64(4235264), C64(2146304),  C64(536920064)  };	 //best, fianchetto, best w/a3, best w/c3, best w/c4
-const U64 blackKSpawnShields[] = { C64(1970324836974592), C64(1409573906808832), C64(1689949371891712),
-		C64(848822976643072),  C64(844442110001152)  };	 //best, fianchetto, best w/h3, best w/f3, best w/f4
-const U64 blackQSpawnShields[] = { C64(63050394783186944), C64(45106365017882624), C64(27162335252578304), C64(54078379900534784),  C64(54043332967399424)  };	 //best, fianchetto, best w/a3, best w/c3, best w/c4
-const U64 	 queenPawns[] = { C64(4096), C64(4503599627370496) };
-const U64 	queenPawnBlocker[] = { C64(1048576), C64(17592186044416) };
-const U64 	kingPawns[] =       { C64(2048), C64(2251799813685248) };
-const U64 	 kingPawnBlocker[] = { C64(524288), C64(8796093022208) };
+
+
+
 const int CENTER_PAWN_BLOCK_PENALTY = -35;
-
-const U64 	 darkSquares=C64(6172840429334713770);
-const U64 	  lightSquares=~darkSquares;
-
 extern gameState gs;
 
 int openingMidgameBonus(int color, int bonus) ;
@@ -45,7 +27,9 @@ int materialDownBonus(int color, int bonus) ;
 
 bool goodKingsideShield(U64 x, int color) {
 
-
+	const U64 whiteKSpawnShields[] = { C64(57344), C64(132352), C64(67072), C64(262912),  C64(67109632)  };	 //best, fianchetto, best w/h3, best w/f3, best w/f4
+	const U64 blackKSpawnShields[] = { C64(1970324836974592), C64(1409573906808832), C64(1689949371891712),
+			C64(848822976643072),  C64(844442110001152)  };	 //best, fianchetto, best w/h3, best w/f3, best w/f4
 	if (color==0) {
 		for (int i=0; i < 5; i++ )
 			if (x == whiteKSpawnShields[i]) return true;
@@ -58,7 +42,8 @@ bool goodKingsideShield(U64 x, int color) {
 }
 
 bool goodQueensideShield(U64 x, int color) {
-
+	const U64 whiteQSpawnShields[] = { C64(1792), C64(8413184), C64(4235264), C64(2146304),  C64(536920064)  };	 //best, fianchetto, best w/a3, best w/c3, best w/c4
+	const U64 blackQSpawnShields[] = { C64(63050394783186944), C64(45106365017882624), C64(27162335252578304), C64(54078379900534784),  C64(54043332967399424)  };	 //best, fianchetto, best w/a3, best w/c3, best w/c4
 	if (color==0) {
 		for (int i=0; i < 5; i++ )
 			if (x == whiteQSpawnShields[i]) return true;
@@ -172,6 +157,7 @@ int  bonus( int color) {
 		bonus = materialDownBonus(color, bonus);
 	}
 	bonus += twoBishopBonus(color);
+	const U64 seventhRank[] = { RANK7, RANK2};
 	if (( gs.bitboard[WR+color] & seventhRank[color]) != 0) {
 		bonus += ROOK_ON_SEVENTH_BONUS;
 	}
@@ -208,21 +194,36 @@ int  bonus( int color) {
 
 int openingMidgameBonus(int color, int bonus) {
 
-	if ( ((queenPawns[color] & gs.bitboard[WP+color]) != 0 )
-			&&  ((queenPawnBlocker[color] & gs.bitboard[WHITEPIECES+color]) != 0 )  )
+	U64 king = gs.bitboard[WK+color];
+	U64 pawns = gs.bitboard[WP+color];
+	U64 pieces = gs.bitboard[WHITEPIECES+color];
+
+	const U64  ksCastled[]={C64(7),  C64(504403158265495552)};
+	const U64  qsCastled[]={C64(224), C64(2305843009213693952)};
+	const U64 safeMiddleGameKingSquares[] = {C64(107), C64(7710162562058289152)    };
+	const U64 	queenPawnBlocker[] = { C64(1048576), C64(17592186044416) };
+	const U64 	 kingPawnBlocker[] = { C64(524288), C64(8796093022208) };
+	const U64 	 queenPawns[] = { C64(4096), C64(4503599627370496) };
+	const U64 	kingPawns[] =       { C64(2048), C64(2251799813685248) };
+
+	if ( ((queenPawns[color] & pawns) != 0 )
+			&&  ((queenPawnBlocker[color] & pieces) != 0 )  )
 	{
 		bonus += CENTER_PAWN_BLOCK_PENALTY;
 	}
 	else
-		if ( ((kingPawns[color] & gs.bitboard[WP+color]) != 0 )
-				&&  ((kingPawnBlocker[color] & gs.bitboard[WHITEPIECES+color]) != 0 )  )
+		if ( ((kingPawns[color] & pawns) != 0 )
+				&&  ((kingPawnBlocker[color] & pieces) != 0 )  )
 		{
 			bonus += CENTER_PAWN_BLOCK_PENALTY;
 		}
 
-	if  (  (  gs.bitboard[10+color] &  ksCastled[color])    != 0 )
+	if  (  (  king &  ksCastled[color])    != 0 )
 	{
-		U64 x = kingsideMask[color] & gs.bitboard[WP+color];
+
+		const U64  wreckedQSPawnShield[] = { C64(3221225472), C64(824633720832)   };
+		const U64 kingsideMask[] =  { C64(67569408), C64(1978038598238208)}; // white, black
+		U64 x = kingsideMask[color] & pawns;
 
 		if (!goodKingsideShield(x, color))
 		{
@@ -231,16 +232,22 @@ int openingMidgameBonus(int color, int bonus) {
 			//System.out.println("wingPawnPushPenalty kingside = -35");
 			bonus += WING_PAWN_PUSH_PENALTY;
 		}
-		if (( gs.bitboard[WP+color] &   wreckedQSPawnShield[color]) != 0 ) {  // if castled kingside, definitely push QSIDE pawns
+		if ((pawns &   wreckedQSPawnShield[color]) != 0 ) {  // if castled kingside, definitely push QSIDE pawns
 			bonus += WING_PAWN_PUSH_BONUS;
 		}
 	}
 
 	else
 
-		if  (  (  gs.bitboard[10+color] &  qsCastled[color])    != 0 )
+		if  (  (  king &  qsCastled[color])    != 0 )
 		{
-			U64 x = queensideMask[color] & gs.bitboard[WP+color];
+			const U64  wreckedKSPawnShield[] = { C64(50331648), C64(12884901888)   };
+			const U64 qsCastlingNudge[] = { C64(64), C64(4611686018427387904) };
+			const U64 queensideMask[] = { C64(551608320), C64(63296822826762240)}; // white, black
+
+			if (king &  qsCastlingNudge[color]) bonus += QUEENSIDE_CASTLING_NUDGE;
+
+			U64 x = queensideMask[color] & pawns;
 
 			if (!goodQueensideShield(x, color))
 			{
@@ -248,12 +255,12 @@ int openingMidgameBonus(int color, int bonus) {
 				//System.out.println("wingPawnPushPenalty qside  = -35");
 				bonus += WING_PAWN_PUSH_PENALTY;
 			}
-			if (( gs.bitboard[WP+color] &   wreckedKSPawnShield[color]) != 0 ) {  // if castled queensider, definitely push KSIDE pawns
+			if ((pawns &   wreckedKSPawnShield[color]) != 0 ) {  // if castled queensider, definitely push KSIDE pawns
 				bonus += WING_PAWN_PUSH_BONUS;
 			}
 		}
 
-	if (  (gs.bitboard[10+color] & safeMiddleGameKingSquares[color]) == 0) {  //oops, king took a walk before the endgame
+	if (  (king & safeMiddleGameKingSquares[color]) == 0) {  //oops, king took a walk before the endgame
 		//System.out.println("kingWalkPenalty = - 35");
 		bonus += KING_WALK_PENALTY;
 	}
@@ -287,6 +294,10 @@ int materialDownBonus(int color, int bonus) {
 
 	//encourage drawish stuff:
 	//bishops of opposite color
+
+	const U64 	 darkSquares=C64(6172840429334713770);
+	const U64 	  lightSquares=~darkSquares;
+
 	int enemyBishopCount = popCount(gs.bitboard[WB+( 1 -color)]);
 	int bishopCount = popCount(gs.bitboard[WB+ color]);
 

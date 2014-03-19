@@ -9,6 +9,8 @@
 #ifndef DEFS_H_
 #define  DEFS_H_
 
+#define testing 1
+
 typedef unsigned long long U64 ;
 #define C64(constantU64) constantU64##ULL
 
@@ -49,6 +51,7 @@ typedef unsigned long long U64 ;
 
 #define  QUEEN_COUNT_BONUS  20
 #define  KING_WALK_PENALTY -30
+#define  QUEENSIDE_CASTLING_NUDGE 25
 #define  WING_PAWN_PUSH_PENALTY  -25
 #define  ROOK_COUNT_BONUS  20
 #define  CASTLING_BONUS  30
