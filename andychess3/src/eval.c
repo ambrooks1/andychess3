@@ -13,11 +13,6 @@
 #include "movegen.h"
 #include "pawnStructureTable.h"
 
-
-
-
-
-
 const int CENTER_PAWN_BLOCK_PENALTY = -35;
 extern gameState gs;
 
@@ -74,8 +69,8 @@ short whitePawnTable[] =
 		25, 25, 25, 25, 25, 25, 25, 25,
 		22, 22, 22, 22, 22, 22, 22, 22,
 		5,  5, 10, 20, 20, 10,  5,  5,
-		0,  0,  0, 20, 20,  0,  0,  0,
-		5, -5,- 5,  0,  0, -5, -5,  5,
+		0,  0,  0, 15, 20,  0,  0,  0,
+		5, -5,- 5, 10,  0, -5, -5,  5,
 		5, 10, 10,-25,-25, 10, 10,  5,
 		0,  0,  0,  0,  0,  0,  0,  0
 };
@@ -438,17 +433,17 @@ int getEvaluation() {
 	pawnStructureBonus(passedPawnBonus);
 
 	tot[0] = gs.material[0]
-	        + gs.positional[0]
-	        + bonus(0)
-	        + passedPawnBonus[0];
+	                     + gs.positional[0]
+	                                     + bonus(0)
+	                                     + passedPawnBonus[0];
 
 	tot[1] = gs.material[1]
-	       + gs.positional[1]
-	       + bonus(1)
-	       + passedPawnBonus[1];
+	                     + gs.positional[1]
+	                                     + bonus(1)
+	                                     + passedPawnBonus[1];
 	int eval =  tot[gs.color] - tot[1-gs.color];
 
-/*	printf( "white material   %d: black material   %d \n", gs.material[WHITE], gs.material[BLACK]);
+	/*	printf( "white material   %d: black material   %d \n", gs.material[WHITE], gs.material[BLACK]);
 	printf( "white positional %d: black positional %d \n", gs.positional[WHITE], gs.positional[BLACK]);
 	printf( "white bonus      %d: black bonus      %d \n", bonus(WHITE),         bonus(BLACK));
 	printf( "WHITE PP BONUS   %d:  BLACK PP BONUS  %d \n", passedPawnBonus[WHITE], passedPawnBonus[BLACK]);

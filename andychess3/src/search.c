@@ -46,6 +46,8 @@ bool  stopSearch = true;
 U64 startTime=0;
 
 int valWINDOW=35;
+const int EVAL_LAZY_THRESHHOLD = 250;
+
 extern bool useTT;
 extern int probes, hits, stores;
 extern int pst_probes, pst_hits, pst_stores;
@@ -77,13 +79,7 @@ bool search_debug=false;
 bool usingTime=false;
 
 void clearHistory() {
-	for (int i=0 ; i < 2; i++) {
-		for (int j=0; j < 64; j++) {
-			for (int k=0; k < 64; k++) {
-				history[i][j][k]=0;
-			}
-		}
-	}
+	memset(history, 0, sizeof(history[0][0][0]) * 2 * 64 * 64);
 }
 
 void turnEverythingOn() {
@@ -156,7 +152,7 @@ void sort_by_value(MoveInfo arr[], int size) {
 		}
 	}
 }
-void sorter(int arr[], int size) {
+/*void sorter(int arr[], int size) {
 	// note the size-1.  The last one will be in order
 	for (int i = 0; i < size-1; i++) {
 		int min = i;
@@ -174,7 +170,7 @@ void sorter(int arr[], int size) {
 			arr[min] = temp;
 		}
 	}
-}
+}*/
 void makeMoveInfo(int movelist[], MoveInfo movelist2[],  int cntMoves) {
 	for (int i=0; i < cntMoves; i++) {
 		movelist2[i].move = movelist[i];
@@ -217,25 +213,20 @@ int calcBestMoveAux( int alpha, int beta)  {
 	MoveInfo movelist[200];
 
 	getTheMovelist(movelist, &cntMoves);
-	//printMovelist(movelist, cntMoves);
 
 	int flags2=gs.flags;
 	U64 hash=gs.hash;
 
 	int currentDepth=1;
 
-
-	//write("# getting time\n");
 	if (usingTime) {
 		startTime=currentTimeMillisecs();
 		timeForThisMove = getTimeForThisMove(timeLeft,
 				movesPerSession- ( ( movesMade + numBookMovesMade) % movesPerSession ), increment);
 	}
 	int bestScoreForThisIteration = 0;
-	//write("# starting iterations\n");
+
 	while (currentDepth < maxIterations) {
-		//printf("#current depth %d\n", currentDepth);
-		//fflush(stdout);
 		// we don't have enough time to do this iteration, so return the global best move
 		if (usingTime) {
 			U64 elapsedTime = currentTimeMillisecs() - startTime;
@@ -295,12 +286,10 @@ int calcBestMoveAux( int alpha, int beta)  {
 
 		if (bestScoreForThisIteration <= alpha) {
 				alpha = MIN_INFINITY;
-
 		}
 		else
 		if  (bestScoreForThisIteration >= beta) {
 					beta = MAX_INFINITY;
-
 		}
 		else
 		{
@@ -598,7 +587,7 @@ int search( int alpha, int beta,
 			break;
 
 		case MOVEGEN_CAPTURES_PHASE:
-			generateCapturesAndPromotions(gs.color, movelist, &numMoves);
+			generateCapturesAndPromotions(gs.color, movelist, &numMoves, gs.bitboard, gs.board);
 			if (numMoves > 0 ) {
 				assert(depth < MAX_DEPTH);
 				orderMovesCaps( movelist, numMoves, hash,depth, bestMove, hashFound);
@@ -606,7 +595,7 @@ int search( int alpha, int beta,
 			break;
 
 		case MOVEGEN_NONCAPTURES_PHASE:
-			generateNonCaptures(gs.color, movelist, &numMoves);
+			generateNonCaptures(gs.color, movelist, &numMoves, gs.bitboard);
 			if (numMoves > 0 ) {
 				assert(depth < MAX_DEPTH);
 				orderMoves( movelist, numMoves, depth, bestMove, hashFound);
@@ -791,10 +780,13 @@ int quies(  int alpha, int beta, int depth)
 
 	int val ;
 
-	if (positionalEvalOn)
+	//lazy evaluation
+	val=getEvaluationMaterial();
+	if ((val > (alpha - EVAL_LAZY_THRESHHOLD)) &&
+			    (val < (beta + EVAL_LAZY_THRESHHOLD)))
+	{
 		val= getEvaluation();
-	else
-		val=getEvaluationMaterial();
+	}
 
 	if (val >= beta) {
 		return beta;
@@ -804,7 +796,7 @@ int quies(  int alpha, int beta, int depth)
 	}
 	int numMoves;
 	int movelist[150];
-	generateCapturesAndPromotions(gs.color, movelist,&numMoves);
+	generateCapturesAndPromotions(gs.color, movelist,&numMoves, gs.bitboard, gs.board);
 	if (numMoves==0 ) return val;
 
 	if (turnSEEOn)
@@ -931,7 +923,7 @@ void  orderCapturesBySee( int* movelist, int numMoves) {
 			continue;
 		}
 
-		int seeValue=  see( move, gs.color); //  captures either get a zero value for no good, or a value from 25 to 975
+		int seeValue=  see( move, gs.color, gs.board); //  captures either get a zero value for no good, or a value from 25 to 975
 		if (seeValue==0) {
 			movelist[i]=0;
 			continue;

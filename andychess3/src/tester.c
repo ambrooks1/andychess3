@@ -198,7 +198,7 @@ static char*  isLegal_test() {
 	parseFen(fen);
 	int numMoves;
 	int moves[200];
-	generateNonCaptures(gs.color, moves, &numMoves);
+	generateNonCaptures(gs.color, moves, &numMoves, gs.bitboard);
 
 	for (int i=0; i < numMoves; i++)
 	{
@@ -438,7 +438,7 @@ void bookTest() {
 void do_all_tests(void) {
 
 	initializeAll();
-	printf("Finished initializing\n");
+	/*printf("Finished initializing\n");
 	checkTest();
 	illegal_move_test();
 	test_get_legal_moves();
@@ -451,10 +451,10 @@ void do_all_tests(void) {
 
 	run_perft_test();
     check_evasion_test();
-    hash_test();
+    hash_test();*/
 	winAtChess();
 
-	do_eval();
+	//do_eval();
 
 	//bookTest();
 	//repetitionTest();

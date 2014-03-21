@@ -54,7 +54,7 @@ typedef unsigned long long U64 ;
 #define  QUEENSIDE_CASTLING_NUDGE 25
 #define  WING_PAWN_PUSH_PENALTY  -25
 #define  ROOK_COUNT_BONUS  20
-#define  CASTLING_BONUS  30
+#define  CASTLING_BONUS  35
 #define  ROOK_ON_SEVENTH_BONUS  20
 #define  WING_PAWN_PUSH_BONUS  20
 #define  TWO_BISHOPS_BONUS  15

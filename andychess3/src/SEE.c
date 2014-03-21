@@ -30,7 +30,8 @@
 extern gameState gs;
 
 void getRegularAttackers( int to, U64 allPieces,
-		U64 queen[], U64 rook[], U64 bishop[], U64 knight[], int ptr[], int attackers[][16]);
+		U64 kings[], U64 queen[], U64 rook[], U64 bishop[],
+		U64 knight[], U64 pawns[], int ptr[], int attackers[][16]);
 
 extern U64 knightMoveArray[64];
 extern U64  kingMoveArray[64];
@@ -65,7 +66,7 @@ void insertXRayAttacker(int side, int attackers[][16], int ptr[],
 		}
 	}
 }
-void getXRayAttackerRook( U64 all, int i, U64 blockers[], int attackingColor, int vertXRayAttacker[][2]) {
+void getXRayAttackerRook( U64 all, int i, U64 blockers[], int attackingColor, int vertXRayAttacker[][2], int board[]) {
 	//blockers should be rooks, queens
 	int blocker, victimSquare, victim, idx, attackerSquare, attacker;
 	U64 xray;
@@ -73,7 +74,7 @@ void getXRayAttackerRook( U64 all, int i, U64 blockers[], int attackingColor, in
 	for (int j=0; j < 2; j++) {
 		xray = xrayRookAttacks(all ,blockers[j], i) ;
 		victimSquare=63-i;
-		victim= gs.board[victimSquare];
+		victim= board[victimSquare];
 		if (victim == -1 || victim == attackingColor) return ;
 
 
@@ -81,7 +82,7 @@ void getXRayAttackerRook( U64 all, int i, U64 blockers[], int attackingColor, in
 			idx = bitScanForward(xray);
 			attackerSquare=63-idx;
 
-			attacker = gs.board[attackerSquare];
+			attacker = board[attackerSquare];
 
 			if ( (attacker != (WR+attackingColor)) && ( attacker != (WQ+attackingColor)   )     )  {
 				xray = xray & ( xray - 1 );
@@ -99,7 +100,7 @@ void getXRayAttackerRook( U64 all, int i, U64 blockers[], int attackingColor, in
 
 }
 
-void  getXRayAttackerBishop( U64 all, int i, U64 blockers[], int attackingColor, int diagXRayAttacker[][2]) {
+void  getXRayAttackerBishop( U64 all, int i, U64 blockers[], int attackingColor, int diagXRayAttacker[][2], int board[]) {
 	//blockers should be queens, rooks
 	int blocker, victimSquare, victim, idx, attackerSquare, attacker;
 	U64 xray;
@@ -107,7 +108,7 @@ void  getXRayAttackerBishop( U64 all, int i, U64 blockers[], int attackingColor,
 	for (int j=0; j < 2; j++) {
 		xray = xrayBishopAttacks(all ,blockers[j], i) ;
 		victimSquare=63-i;
-		victim= gs.board[victimSquare];
+		victim= board[victimSquare];
 		if (victim == -1 || victim == attackingColor) return ;
 
 
@@ -115,7 +116,7 @@ void  getXRayAttackerBishop( U64 all, int i, U64 blockers[], int attackingColor,
 			idx = bitScanForward(xray);
 			attackerSquare=63-idx;
 
-			attacker = gs.board[attackerSquare];
+			attacker = board[attackerSquare];
 
 			if ( (attacker != (WB+attackingColor)) && ( attacker != (WQ+attackingColor)   )     )  {
 				xray = xray & ( xray - 1 );
@@ -142,7 +143,7 @@ int other(int side) {
 
 
 // This is the main routine used by search
-int see( int move, int side)  // the side that is moving
+int see( int move, int side, int board[])  // the side that is moving
 {
 	// does not work for stack of three XRay attackers/defenders, only for stack of two
 	// does not work for xray bishop/queen behind attacking pawn  (:(
@@ -159,17 +160,22 @@ int see( int move, int side)  // the side that is moving
 
 	U64 all =  gs.bitboard[ALLPIECES];
 
+	U64 kings[2];
 	U64 queens[2];
 	U64 bishops[2];
 	U64 rooks[2];
 	U64 knights[2];
+    U64 pawns[2];
 
 	for (int i=0; i < 2; i++) {
+		kings[i] = gs.bitboard[WK+i];
 		queens[i] = gs.bitboard[WQ+i];
 		rooks[i] = gs.bitboard[WR+i];
 		bishops[i] = gs.bitboard[WB+i];
 		knights[i] = gs.bitboard[WN+i];
+		pawns[i] = gs.bitboard[WP+i];
 	}
+
 
 	//U64 pawns = gs.bitboard[WR+side];
 
@@ -186,14 +192,14 @@ int see( int move, int side)  // the side that is moving
 
 	//get regular attackers
 	int ptr[2] = { -1,-1};
-	getRegularAttackers( victimSquare, all,
-			queens, rooks, bishops, knights, ptr, attackers);
+	getRegularAttackers( victimSquare, all, kings,
+			queens, rooks, bishops, knights, pawns, ptr, attackers);
 
 	// move the original attackers to the top of the stack
 	// 'side' is the attacking side
 
 	int from2 =  (move & 63);
-	int attacker = gs.board[from2];    //the initial attacker
+	int attacker = board[from2];    //the initial attacker
 	for (int i=0; i <= ptr[side]; i++) {
 		if (attackers[side][i] == attacker) {
 
@@ -213,7 +219,7 @@ int see( int move, int side)  // the side that is moving
 	int vertHorizXRayAttacker[2][2] = {  { -1, -1 }, {-1, -1} };
 
 	for (int i=0; i < 2; i++) {
-		getXRayAttackerBishop( all, victimSquare, bishopBlockers[i], i, diagXRayAttacker);
+		getXRayAttackerBishop( all, victimSquare, bishopBlockers[i], i, diagXRayAttacker, board);
 
 
 		if (diagXRayAttacker[i] != 0) {
@@ -222,7 +228,7 @@ int see( int move, int side)  // the side that is moving
 			int blocker2= diagXRayAttacker[i][1];
 			insertXRayAttacker(side, attackers,ptr, attacker2, blocker2);
 		}
-		getXRayAttackerRook( all, victimSquare, rookBlockers[i], i, vertHorizXRayAttacker);
+		getXRayAttackerRook( all, victimSquare, rookBlockers[i], i, vertHorizXRayAttacker, board);
 		if (vertHorizXRayAttacker[i] != 0) {
 			int attacker2= vertHorizXRayAttacker[i][0];
 			int blocker2= vertHorizXRayAttacker[i][1];
@@ -231,7 +237,7 @@ int see( int move, int side)  // the side that is moving
 	}
 	//finally, evaluate
 
-	int victim = gs.board[to2];      // the initial victim
+	int victim = board[to2];      // the initial victim
 	if (victim==-1)   return 0;
 
 	if (ptr[side]==-1) return 0;
@@ -269,7 +275,7 @@ int see( int move, int side)  // the side that is moving
 }
 
 void getRegularAttackers( int to, U64 allPieces,
-		U64 queen[], U64 rook[], U64 bishop[], U64 knight[], int ptr[], int attackers[][16]){
+		U64 kings[], U64 queen[], U64 rook[], U64 bishop[], U64 knight[], U64 pawns[], int ptr[], int attackers[][16]){
 
 	//int[2][16] attackers;     colors, pieces
 
@@ -280,7 +286,7 @@ void getRegularAttackers( int to, U64 allPieces,
 	U64 knightAttacks = knightMoveArray[to];
 
 	for (int side=0; side < 2; side++) {
-		if ( (kingAttacks & gs.bitboard[WK+side]) != 0 )
+		if ( (kingAttacks & kings[side]) != 0 )
 			attackers[side][ ++ptr[side]]= WK+side;
 
 		if ((bishopAttacks & queen[side])!= 0)
@@ -303,19 +309,19 @@ void getRegularAttackers( int to, U64 allPieces,
 	U64 piece = 1L << to;
 
 	U64 c = ((piece & ~fileA) >> 7 );
-	if ( (c  & gs.bitboard[WP]) != 0 )
+	if ( (c  & pawns[0]) != 0 )
 		attackers[0][++ptr[0]]= WP;
 
 	U64 d = ((piece & ~fileH) >> 9 );
-	if ( (d  & gs.bitboard[WP]) != 0 )
+	if ( (d  & pawns[0]) != 0 )
 		attackers[0][++ptr[0]]= WP;
 
 	c = ((piece & ~ fileH ) << 7);   //capture
-	if (( c & gs.bitboard[BP]) != 0 )
+	if (( c & pawns[1]) != 0 )
 		attackers[1][++ptr[1]]= BP;
 
 	d = ((piece  & ~fileA)  << 9 );  //capture
-	if (( d & gs.bitboard[BP]) != 0 )
+	if (( d & pawns[1]) != 0 )
 		attackers[1][++ptr[1]]= BP;
 
 }
@@ -355,7 +361,3 @@ int evaluate2(int side, int victim, int attackers[][16],  int ptr[]) {
 
 	return max(   0, retval );
 }
-
-
-
-

@@ -45,7 +45,7 @@ const int  qsToRook[]  ={59, 3};
 const U64 qsRookFrom[]={ C64(128) , C64(-9223372036854775808)  };
 const U64 qsRookTo[]={ C64(16) , C64(1152921504606846976) };
 
-const int lowerBound[] = {8, 48};
+
 const int upperBound[] = { 15, 55};
 const int offset2[]={8, -8};
 const U64 fook[] = { C64(1) ^ C64(4),  C64(72057594037927936) ^ C64(288230376151711744)};
@@ -404,9 +404,9 @@ bool canCastle(int index, U64 allPieces) {
 void getAllMoves( int color, int moves[], int* cntMoves) {
 	int cntNonCaps, cntCaps;
 	int noncaps[150];
-	generateNonCaptures(color, noncaps, &cntNonCaps);
+	generateNonCaptures(color, noncaps, &cntNonCaps, gs.bitboard);
 	int caps[75];
-	generateCapturesAndPromotions(color, caps, &cntCaps);
+	generateCapturesAndPromotions(color, caps, &cntCaps, gs.bitboard, gs.board);
 
 	//printf("number of moves: caps %d number of noncaps %d \n",cntCaps,  cntNonCaps);
 	int cnt2 = cntNonCaps+ cntCaps;
@@ -427,40 +427,40 @@ void getAllMoves( int color, int moves[], int* cntMoves) {
 	}
 	*cntMoves=j;
 }
-void generateCapturesAndPromotions(int color, int moves[], int* cntMoves ) {
+void generateCapturesAndPromotions(int color, int moves[], int* cntMoves, U64 bitboard[], int board[] ) {
 
 	int cnt=0;
-	U64 all= gs.bitboard[ALLPIECES];
+	U64 all= bitboard[ALLPIECES];
 	assert(all != 0);
-	U64 enemyPieces=gs.bitboard[WHITEPIECES+(1-color)];
+	U64 enemyPieces=bitboard[WHITEPIECES+(1-color)];
 	assert(enemyPieces != 0);
-	cnt = getPawnCapturesAndPromotions(cnt, moves, gs.bitboard[WP + color], all, enemyPieces, color, WP+color, gs.flags, gs.board);
+	cnt = getPawnCapturesAndPromotions(cnt, moves, bitboard[WP + color], all, enemyPieces, color, WP+color, gs.flags, board);
 
-	cnt =getKnightCaptures(cnt,moves, gs.bitboard[WN+color], enemyPieces,WN+color, gs.board);
+	cnt =getKnightCaptures(cnt,moves, bitboard[WN+color], enemyPieces,WN+color, board);
 
-	cnt =getBishopCaptures(cnt,moves, gs.bitboard[WB+color],all,enemyPieces,WB+color, gs.board);
+	cnt =getBishopCaptures(cnt,moves, bitboard[WB+color],all,enemyPieces,WB+color, board);
 
-	cnt = getRookCaptures(cnt,moves, gs.bitboard[WR+color],all,enemyPieces,WR+color, gs.board);
+	cnt = getRookCaptures(cnt,moves, bitboard[WR+color],all,enemyPieces,WR+color, board);
 
-	cnt = getQueenCaptures(cnt,moves, gs.bitboard[WQ+color],all,enemyPieces,WQ+color, gs.board);
-	cnt = getKingCaptures( cnt,moves, gs.bitboard[WK+color],enemyPieces,WK+color, gs.board);
+	cnt = getQueenCaptures(cnt,moves, bitboard[WQ+color],all,enemyPieces,WQ+color, board);
+	cnt = getKingCaptures( cnt,moves, bitboard[WK+color],enemyPieces,WK+color, board);
 	*cntMoves=cnt;
 }
 
 
-void generateNonCaptures(int color, int moves[], int* numMoves ) {     // don't forget to free moves after using
-	U64 all= gs.bitboard[ALLPIECES];
+void generateNonCaptures(int color, int moves[], int* numMoves, U64 bitboard[] ) {     // don't forget to free moves after using
+	U64 all= bitboard[ALLPIECES];
 	assert(all != 0);
 
 	int cnt=0;
-	cnt = getPawnPushes(cnt, moves, gs.bitboard[WP +gs.color], all, gs.color, WP+gs.color);
-	cnt = getKnightNonCaptures(cnt,moves,gs.bitboard[WN+gs.color], ~all, WN+gs.color);
-	cnt = getBishopNonCaptures(cnt,moves,gs.bitboard[WB+gs.color],all, ~all, WB+gs.color);
-	cnt = getRookNonCaptures(cnt,moves,gs.bitboard[WR+gs.color],all, ~all, WR+gs.color);
-	cnt = getQueenNonCaptures(cnt,moves,gs.bitboard[WQ+gs.color],all, ~all, WQ+gs.color);
-	cnt = getKingNonCaptures(cnt,moves,gs.bitboard[WK+color], ~all,WK+color);
+	cnt = getPawnPushes(cnt, moves, bitboard[WP +color], all, color, WP+color);
+	cnt = getKnightNonCaptures(cnt,moves,bitboard[WN+color], ~all, WN+color);
+	cnt = getBishopNonCaptures(cnt,moves,bitboard[WB+color],all, ~all, WB+color);
+	cnt = getRookNonCaptures(cnt,moves,bitboard[WR+color],all, ~all, WR+color);
+	cnt = getQueenNonCaptures(cnt,moves,bitboard[WQ+color],all, ~all, WQ+color);
+	cnt = getKingNonCaptures(cnt,moves,bitboard[WK+color], ~all,WK+color);
 
-	if (gs.color == BLACK) {
+	if (color == BLACK) {
 		if (  canCastle(BKSIDE, all))  {
 			int move = createMove(BK, 4, 6,0, kcastle,  0)	;
 			moves[cnt++]=move;
@@ -551,6 +551,7 @@ void make(int move) {
 
 	const int rookHomeQS[] = { 56, 0 };
 	const int rookHomeKS[] = { 63, 7};
+	const int lowerBound[] = {8, 48};
 
 	int oldCsState[2];
 	int newCsState[2];

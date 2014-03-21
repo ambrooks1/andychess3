@@ -131,7 +131,7 @@ void make_test() {
 	parseFen(fen);
 	int numMoves;
 	int movelist[200];
-	generateNonCaptures(gs.color, movelist, &numMoves);
+	generateNonCaptures(gs.color, movelist, &numMoves, gs.bitboard);
 
 	gameState gs2= gs;
 
