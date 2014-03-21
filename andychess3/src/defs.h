@@ -9,7 +9,7 @@
 #ifndef DEFS_H_
 #define  DEFS_H_
 
-#define testing 1
+#define testing 0
 
 typedef unsigned long long U64 ;
 #define C64(constantU64) constantU64##ULL
