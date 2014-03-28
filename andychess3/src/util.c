@@ -42,7 +42,15 @@ int popCount (U64 x) {
    }
    return count;
 }
-
+//used when NOT sparse expected ie > 7 is expected
+int popCount_C_shift(U64 B)
+{
+        B = B - ((B >> 1) & 0x5555555555555555ULL);
+        B = (B & 0x3333333333333333ULL) +
+            ((B >> 2) & 0x3333333333333333ULL);
+        B = (B + (B >> 4)) & 0x0f0f0f0f0f0f0f0fULL;
+        return (B * 0x0101010101010101ull) >> 56;
+}
 /*const int index64[64] = {
     0,  1, 48,  2, 57, 49, 28,  3,
    61, 58, 50, 42, 38, 29, 17,  4,

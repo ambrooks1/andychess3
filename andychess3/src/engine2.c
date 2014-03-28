@@ -46,7 +46,7 @@ int stateHistCtr = 0;    // state HistoryCounter, incremented for every move pla
 int fiftyMoveCounter=0;
 
 int numBookMovesMade=0;
-const char* version = "2.0";
+const char* version = "2.05";
 
 bool outOfBook=true;
 extern int createdBook;

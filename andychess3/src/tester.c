@@ -269,15 +269,6 @@ void illegal_move_test() {    // make sure it picks up illegal moves
 	 */
 }
 
-static void execute2(char fen[]) {
-	parseFen(fen);
-	search_debug=true;
-
-	char moveStr[6];
-
-	calcBestMove( moveStr);
-	printf("new move = %s\n", moveStr);
-}
 static  void execute(char *answer) {
 
 	U64 start = currentTimeMillisecs() ;
@@ -307,6 +298,15 @@ void run_search( char *fen, char *answer) {
 	//printf("execute\n");
 	execute(answer);
 	//printf("Finished execute\n");
+}
+
+static void runOnePosition(char fen[])  {
+	parseFen(fen);
+	search_debug=true;
+	char moveStr[6];
+
+	calcBestMove( moveStr);
+	printf("new move = %s\n", moveStr);
 }
 static void winAtChess()
 {
@@ -381,31 +381,6 @@ void do_eval() {
 	getEvaluation();
 }
 
-/*void repetitionTest() {
-	if (!gs.initialized) return ;
-
-	newGame();
-	printf("Repetition Test\n");
-	char moves[16][5] = { "b1c3","b8c6", "g1f3","g8f6",
-					   "c3b1","c6b8", "f3g1","f6g8",
-					   "b1c3","b8c6", "g1f3","g8f6",
-					   "c3b1","c6b8", "f3g1","f6g8"  };
-
-	for (int i=0; i< 16; i++) {
-		char * move = moves[i];
-		//printf("next move: %s\n", move);
-		//printf("old hash %llu\n", gs.hash);
-		applyMove(move);
-		//printf("new hash %llu\n", gs.hash);
-		//printf("testing move %d = %s\n", i, move);
-		assert(i < 7 || isRepetition());
-
-		if (isRepetition()) {
-			printf("Repetition detected on move %d\n", i);
-		}
-	}
-
-}*/
 void bookTest() {
 		printf("book test\n");
 		char fen[] = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
@@ -435,29 +410,36 @@ void bookTest() {
 				(strcmp(moveStr,"g1f3")== 0 ) ||
 				(strcmp(moveStr,"g2g3")== 0 ));
 }
+void various_tests() {
+	printf("Finished initializing\n");
+		checkTest();
+		illegal_move_test();
+		test_get_legal_moves();
+		 make_test_suite();
+		see_test_suite();
+
+		check_test();
+		isLegal_test();
+		eval_test();
+
+		run_perft_test();
+	    check_evasion_test();
+	    hash_test();
+
+		do_eval();
+
+		bookTest();
+
+}
 void do_all_tests(void) {
 
 	initializeAll();
-	/*printf("Finished initializing\n");
-	checkTest();
-	illegal_move_test();
-	test_get_legal_moves();
-	 make_test_suite();
-	see_test_suite();
-
-	check_test();
-	isLegal_test();
-	eval_test();
-
-	run_perft_test();
-    check_evasion_test();
-    hash_test();*/
+	//various_tests();
 	winAtChess();
-
-	//do_eval();
-
-	//bookTest();
-	//repetitionTest();
+	//char *fen= "rnbq1rk1/pp3ppp/5n2/3p4/2pP4/P1B5/1P1NPPPP/R2QKB1R w KQ - 2 10";
+	//char *fen="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+    //char *fen="1k6/1p5p/6p1/1P2p1P1/4P3/5K2/5P2/2q5 w - - 4 49";
+	//runOnePosition(fen);
 	printf("all tests successfully completed\n");
 }
 

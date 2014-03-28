@@ -46,7 +46,7 @@ bool  stopSearch = true;
 U64 startTime=0;
 
 int valWINDOW=35;
-const int EVAL_LAZY_THRESHHOLD = 250;
+
 
 extern bool useTT;
 extern int probes, hits, stores;
@@ -55,7 +55,7 @@ extern gameState gs;
 extern const U64 minedBitboards[2][2];
 extern int numBookMovesMade;
 extern const int valueMap[];
-int maxIterations=7;
+int maxIterations=DEFAULT_MAX_ITERATIONS;
 
 int     numCutoffs=0,
 		firstMoveCutoffs=0,
@@ -69,7 +69,7 @@ int history[2][64][64];
 
 int killer[MAXDEPTH][NUMKILLERS];
 bool        useIID,do_LMR,
-	extensionsOn, futilityOn,
+	extensionsOn, futilityOn, extendedFutility,
 	turnNullOn,deltaPruneOn,
 	positionalEvalOn,orderByHistory,
 	orderByKillers,turnSEEOn, usingRepetitionCheck;
@@ -88,6 +88,7 @@ void turnEverythingOn() {
 	useTT=true;
 	do_LMR=true;
 	extensionsOn=true;
+	extendedFutility=true;
 	futilityOn=true;
 
 	turnNullOn=true;
@@ -152,25 +153,7 @@ void sort_by_value(MoveInfo arr[], int size) {
 		}
 	}
 }
-/*void sorter(int arr[], int size) {
-	// note the size-1.  The last one will be in order
-	for (int i = 0; i < size-1; i++) {
-		int min = i;
-		for (int j = i+1; j < size; j++) {
-			int myOrderingValue =  orderingValue(arr[j]);
-			int myOrderingValue2 = orderingValue(arr[min]);
 
-			if (myOrderingValue < myOrderingValue2) {
-				min = j;
-			}
-		}
-		if (min != i) { // if you're not changing position, don't swap
-			int temp = arr[i];
-			arr[i] = arr[min];
-			arr[min] = temp;
-		}
-	}
-}*/
 void makeMoveInfo(int movelist[], MoveInfo movelist2[],  int cntMoves) {
 	for (int i=0; i < cntMoves; i++) {
 		movelist2[i].move = movelist[i];
@@ -205,6 +188,17 @@ void getTheMovelist(MoveInfo movelist2[], int *cntMoves2) {
 	*cntMoves2=cntMoves;
 }
 
+void printPV(LINE *line) {
+	char s[6];
+	int cnt = line->cmove;
+	//printf("size of pv = %d\n", cnt);
+	for (int i=0; i < cnt; i++) {
+						int move = line->argmove[i];
+						moveToString(move,s);
+						printf("%s ", s);
+	}
+	printf("\n");
+}
 int calcBestMoveAux( int alpha, int beta)  {
 
 
@@ -225,6 +219,7 @@ int calcBestMoveAux( int alpha, int beta)  {
 				movesPerSession- ( ( movesMade + numBookMovesMade) % movesPerSession ), increment);
 	}
 	int bestScoreForThisIteration = 0;
+	LINE line;
 
 	while (currentDepth < maxIterations) {
 		// we don't have enough time to do this iteration, so return the global best move
@@ -233,9 +228,13 @@ int calcBestMoveAux( int alpha, int beta)  {
 			U64 adjustedTime= elapsedTime * LEVEL_INCREASE_TIME_MULTIPLE;
 			if  (adjustedTime > timeForThisMove) {
 				if (printLogging) printLoggingInfo(currentDepth, maxIterations, bestMove, bestScoreForThisIteration);
+				//printPV(&line);
 				return bestMove;
 			}
 		}
+		line.cmove=0;
+		memset(line.argmove,0,sizeof(line.argmove));
+
 		bestScoreForThisIteration= MAX_INFINITY;
 
 		sort_by_value(movelist,cntMoves);
@@ -247,14 +246,14 @@ int calcBestMoveAux( int alpha, int beta)  {
 			int move = movelist[i].move;
 
 			int myMoveType = moveType(move);
-			assert(myMoveType >=1 && myMoveType <= 9);
+			//assert(myMoveType >=1 && myMoveType <= 9);
 			if (!isLegal( move, flags2, hash, myMoveType)) continue;
 
 
 			int searchDepth=currentDepth;
 			int score;
-			assert(searchDepth < MAX_DEPTH);
-			score = search( alpha, beta,  searchDepth,MATE,true,false, false);
+			//assert(searchDepth < MAX_DEPTH);
+			score = search( alpha, beta,  searchDepth,MATE,true,false, false, &line);
 
 			if (usingTime && stopSearch) {
 				unmake(move, flags2, hash);
@@ -263,14 +262,15 @@ int calcBestMoveAux( int alpha, int beta)  {
 			movelist[i].value=score;
 			unmake(move, flags2, hash);
 
-		/*	if (search_debug) {
+			if (search_debug && currentDepth >= 15) {
 				char s[6];
 				moveToString(move,s);
 				printf("Level  %d  move %s value %d bestval %d alpha %d beta %d\n",
 						currentDepth, s,
 						score,
 						bestScoreForThisIteration,alpha, beta);
-			}*/
+				printPV(&line);
+			}
 
 			if (score < bestScoreForThisIteration) {
 				bestScoreForThisIteration=score;
@@ -278,6 +278,9 @@ int calcBestMoveAux( int alpha, int beta)  {
 
 				if (score <= alpha) {
 					alpha=score;
+					 line.argmove[0] = move;
+					 memcpy(line.argmove + 1, line.argmove, line.cmove * sizeof(int));
+					 line.cmove = line.cmove + 1;
 					if (score < beta) break;
 				}
 			}
@@ -301,7 +304,7 @@ int calcBestMoveAux( int alpha, int beta)  {
 	}  //end of iteration deepening loop
 	//if (printLogging) printLoggingInfo(currentDepth, bestMove, bestScoreForThisIteration);
 	//ponderMove=getPonderMove(gs, bestMove);
-
+	//printPV(&line);
 	return bestMove;
 }
 void printLoggingInfo(int currentDepth, int maxIterations, int bestMove, int score) {
@@ -427,9 +430,12 @@ bool isRepetition() {
 	return false;
 }
 int search( int alpha, int beta,
-		int depth, int mate, bool allowNull, bool extended, bool returnBestMove)
+		int depth, int mate, bool allowNull, bool extended, bool returnBestMove, LINE * pline)
 {
 	assert(depth < MAX_DEPTH);
+	LINE line;
+	line.cmove=0;
+	memset(line.argmove,0,sizeof(line.argmove));
 
 	if (usingTime) {
 		nextTimeCheck--;
@@ -466,6 +472,7 @@ int search( int alpha, int beta,
 			extended = true;
 		}
 		else{
+			pline->cmove = 0;
 			return quies(alpha,beta,depth);
 		}
 	}
@@ -489,7 +496,7 @@ int search( int alpha, int beta,
 		gs.color = 1-gs.color;
 		if ( gs.color==BLACK) gs.hash = gs.hash ^ gs.side;
 		assert(depth < MAX_DEPTH);
-		int nullMoveScore= -search( -beta, -beta + 1,depth - 1 - R,  mate-1, false,false,false);
+		int nullMoveScore= -search( -beta, -beta + 1,depth - 1 - R,  mate-1, false,false,false, &line);
 
 		gs.color = 1-gs.color;
 		if ( gs.color==BLACK) gs.hash = gs.hash ^ gs.side;
@@ -524,6 +531,17 @@ int search( int alpha, int beta,
 			fprune = true;
 		}
 	}
+	else{
+		if   ( (depth ==2 && !ownKingInCheck && extendedFutility )){
+				materialEval =getEvaluationMaterial(gs);
+
+				if (materialEval + 500  <= alpha){
+					fmargin = 500;
+					fprune = true;
+				}
+			}
+	}
+
 	if (useTT) {
 		bool found = tt_probeHash(gs.hash);               // *** check if this position was visited before, and if we still have info about it
 
@@ -589,7 +607,10 @@ int search( int alpha, int beta,
 		case MOVEGEN_CAPTURES_PHASE:
 			generateCapturesAndPromotions(gs.color, movelist, &numMoves, gs.bitboard, gs.board);
 			if (numMoves > 0 ) {
-				assert(depth < MAX_DEPTH);
+				/*if (depth >= MAX_DEPTH) {
+									printf("OUCH 1 depth == %d\n", depth);
+								}
+				assert(depth < MAX_DEPTH);*/
 				orderMovesCaps( movelist, numMoves, hash,depth, bestMove, hashFound);
 			}
 			break;
@@ -597,7 +618,10 @@ int search( int alpha, int beta,
 		case MOVEGEN_NONCAPTURES_PHASE:
 			generateNonCaptures(gs.color, movelist, &numMoves, gs.bitboard);
 			if (numMoves > 0 ) {
-				assert(depth < MAX_DEPTH);
+				/*if (depth >= MAX_DEPTH) {
+									printf("OUCH 2 depth == %d\n", depth);
+								}
+				assert(depth < MAX_DEPTH);*/
 				orderMoves( movelist, numMoves, depth, bestMove, hashFound);
 			}
 			break;
@@ -605,10 +629,10 @@ int search( int alpha, int beta,
 			//generateCheckEvasionMoves(gs.color, movelist, &numMoves);
 			getAllMoves(gs.color, movelist, &numMoves);
 			if (numMoves > 0 ) {
-				if (depth >= MAX_DEPTH) {
-					printf("OUCH depth == %d\n", depth);
+				/*if (depth >= MAX_DEPTH) {
+					printf("OUCH 3 depth == %d\n", depth);
 				}
-				assert(depth < MAX_DEPTH);
+				assert(depth < MAX_DEPTH);*/
 				orderMoves( movelist, numMoves, depth, bestMove, hashFound);
 			}
 			break;
@@ -655,13 +679,13 @@ int search( int alpha, int beta,
 			int myOrderingValue=orderingValue(move);
 
 			if (do_LMR) {
-				score = lmr_search( alpha, beta, depth, mate,
-						extended, legal, opponentIsInCheck, searchDepth,
-						myOrderingValue);
+				score = lmr_search( alpha, beta, searchDepth, mate,
+						extended, legal, opponentIsInCheck,
+						myOrderingValue, &line);
 			}
 			else {
 				score = pv_search( alpha, beta, mate, extended,
-						foundPv, searchDepth);
+						foundPv, searchDepth, &line);
 			}
 
 			nodesSearched++;
@@ -677,6 +701,10 @@ int search( int alpha, int beta,
 					alpha = score;
 					bestMove = move;
 					foundPv = true;
+
+					 pline->argmove[0] = move;
+					 memcpy(pline->argmove + 1, line.argmove, line.cmove * sizeof(int));
+					 pline->cmove = line.cmove + 1;
 
 					if(score >= beta)  {
 						if (legal==1) firstMoveCutoffs++;
@@ -710,26 +738,28 @@ int search( int alpha, int beta,
 	return bestScore;
 }
 int pv_search( int alpha, int beta,
-		int mate, bool extended, bool foundPv, int searchDepth) {
+		int mate, bool extended, bool foundPv, int searchDepth, LINE * line) {
 	int score;
 	assert(searchDepth < MAX_DEPTH);
 	if (foundPv) {
-		score = -search(   -alpha - 1, -alpha, searchDepth,mate - 1, true,extended, false);   // reduced window pv search
+		score = -search(   -alpha - 1, -alpha, searchDepth,mate - 1, true,extended, false, line);   // reduced window pv search
 		if ((score > alpha) && (score < beta)) // Check for failure.
-			score = -search(  -beta, -alpha,searchDepth, mate - 1, true,extended, false);   // do regular search
+			score = -search(  -beta, -alpha,searchDepth, mate - 1, true,extended, false, line);   // do regular search
 	}
 	else {
-		score = -search(  -beta, -alpha,searchDepth, mate - 1, true,extended, false);   // do regular search
+		score = -search(  -beta, -alpha,searchDepth, mate - 1, true,extended, false, line);   // do regular search
 	}
 	return score;
 }
 int lmr_search( int alpha, int beta,
 		int depth, int mate, bool extended, int legal,
-		bool opponentIsInCheck, int searchDepth, int myOrderingValue) {
+		bool opponentIsInCheck, int myOrderingValue, LINE *line) {
 	int score;
-	assert(searchDepth < MAX_DEPTH);
+
+	assert(depth < MAX_DEPTH);
+
 	if (legal == 1) {
-		score = -search( -beta, -alpha,searchDepth, mate - 1, true,extended, false);        //normal alpha-beta search
+		score = -search( -beta, -alpha,depth, mate - 1, true,extended, false, line);        //normal alpha-beta search
 	}
 	else
 	{
@@ -737,7 +767,7 @@ int lmr_search( int alpha, int beta,
 				&& (myOrderingValue >= CAPTURE_SORT_VALS + 1)
 				&& (!opponentIsInCheck) && ( beta - alpha <= 1))
 		{
-			score = -search(   -alpha - 1, -alpha, searchDepth-1,mate - 1, true,extended, false);   // reduced window pv search
+			score = -search(   -alpha - 1, -alpha, depth-1,mate - 1, true,extended, false, line);   // reduced window pv search
 		}
 		else
 		{
@@ -745,9 +775,9 @@ int lmr_search( int alpha, int beta,
 		}
 		if(score > alpha)
 		{
-			score = -search(   -alpha - 1, -alpha, searchDepth,mate - 1, true,extended, false);   // reduced window pv search
+			score = -search(   -alpha - 1, -alpha, depth,mate - 1, true,extended, false, line);   // reduced window pv search
 			if ((score > alpha) && (score < beta)) // Check for failure.
-				score = -search(  -beta, -alpha,searchDepth, mate - 1, true,extended, false);   // do regular search
+				score = -search(  -beta, -alpha,depth, mate - 1, true,extended, false, line);   // do regular search
 		}
 	}
 	return score;
@@ -782,8 +812,8 @@ int quies(  int alpha, int beta, int depth)
 
 	//lazy evaluation
 	val=getEvaluationMaterial();
-	if ((val > (alpha - EVAL_LAZY_THRESHHOLD)) &&
-			    (val < (beta + EVAL_LAZY_THRESHHOLD)))
+	if (  (val > (alpha - EVAL_LAZY_THRESHHOLD)) &&
+		  (val < (beta +  EVAL_LAZY_THRESHHOLD))  && positionalEvalOn)
 	{
 		val= getEvaluation();
 	}
@@ -857,6 +887,7 @@ void orderMovesCaps( int* movelist, int numMoves,  U64 hash, int depth, int hash
 }
 
 void orderMoves( int* movelist, int numMoves, int depth, int hashMove, bool hashFound) {
+
 	for (int i=0; i < numMoves; i++)
 	{
 		int move = movelist[i];

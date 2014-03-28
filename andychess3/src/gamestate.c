@@ -647,7 +647,7 @@ void make(int move) {
 		break;
 
 	case kcastle:
-		gs.positional[gs.color] += CASTLING_BONUS;
+		gs.positional[gs.color] += KS_CASTLING_BONUS;
 		gs.board[to] =  myPieceMoving;
 		int rookFrom  = ksFromRook[gs.color];
 		int rookTo   =  ksToRook[gs.color];
@@ -674,7 +674,7 @@ void make(int move) {
 		break;
 
 	case qcastle:
-		gs.positional[gs.color] += CASTLING_BONUS;
+		gs.positional[gs.color] += QS_CASTLING_BONUS;
 		gs.board[to] =  myPieceMoving;
 
 		rookFrom  = qsFromRook[gs.color];
@@ -887,7 +887,7 @@ void unmake(int move, int flags2, U64 hash2) {
 		}
 		break;
 	case kcastle:
-		gs.positional[color2] -= CASTLING_BONUS;
+		gs.positional[color2] -= KS_CASTLING_BONUS;
 		gs.board[to] = EMPTY;
 		gs.board[ksToRook[color2]] = EMPTY;
 		gs.board[ksFromRook[color2]] =  WR+color2;
@@ -902,7 +902,7 @@ void unmake(int move, int flags2, U64 hash2) {
 		gs.bitboard[ALLPIECES]    ^=  rookFromToBB;   // update occupied ...
 		break;
 	case qcastle:
-		gs.positional[color2] -= CASTLING_BONUS;
+		gs.positional[color2] -= QS_CASTLING_BONUS;
 		gs.board[to] = EMPTY;
 		gs.board[qsToRook[color2]] = EMPTY;
 		gs.board[qsFromRook[color2]] =  WR+color2;
