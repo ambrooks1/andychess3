@@ -22,7 +22,7 @@ int materialDownBonus(int color, int bonus) ;
 
 bool goodKingsideShield(U64 x, int color) {
 
-	const U64 whiteKSpawnShields[] = { C64(57344), C64(132352), C64(67072), C64(262912),  C64(67109632)  };	 //best, fianchetto, best w/h3, best w/f3, best w/f4
+	const U64 whiteKSpawnShields[] = { C64(1792), C64(132352), C64(67072), C64(262912),  C64(67109632)  };	 //best, fianchetto, best w/h3, best w/f3, best w/f4
 	const U64 blackKSpawnShields[] = { C64(1970324836974592), C64(1409573906808832), C64(1689949371891712),
 			C64(848822976643072),  C64(844442110001152)  };	 //best, fianchetto, best w/h3, best w/f3, best w/f4
 	if (color==0) {
@@ -37,7 +37,7 @@ bool goodKingsideShield(U64 x, int color) {
 }
 
 bool goodQueensideShield(U64 x, int color) {
-	const U64 whiteQSpawnShields[] = { C64(1792), C64(8413184), C64(4235264), C64(2146304),  C64(536920064)  };	 //best, fianchetto, best w/a3, best w/c3, best w/c4
+	const U64 whiteQSpawnShields[] = { C64(57344), C64(8413184), C64(4235264), C64(2146304),  C64(536920064)  };	 //best, fianchetto, best w/a3, best w/c3, best w/c4
 	const U64 blackQSpawnShields[] = { C64(63050394783186944), C64(45106365017882624), C64(27162335252578304), C64(54078379900534784),  C64(54043332967399424)  };	 //best, fianchetto, best w/a3, best w/c3, best w/c4
 	if (color==0) {
 		for (int i=0; i < 5; i++ )
@@ -225,7 +225,7 @@ int openingMidgameBonus(int color, int bonus) {
 			//kingside castled with kside pawn shield
 			//penalty for moving pawns away from the shield in front of castled king on kingside
 			//System.out.println("wingPawnPushPenalty kingside = -35");
-			bonus += WING_PAWN_PUSH_PENALTY;
+			bonus += BROKEN_KSIDE_SHIELD_PENALTY;
 		}
 		if ((pawns &   wreckedQSPawnShield[color]) != 0 ) {  // if castled kingside, definitely push QSIDE pawns
 			bonus += WING_PAWN_PUSH_BONUS;
@@ -248,7 +248,7 @@ int openingMidgameBonus(int color, int bonus) {
 			{
 				//penalty for moving pawns away from the shield in front of castled king on kingside
 				//System.out.println("wingPawnPushPenalty qside  = -35");
-				bonus += WING_PAWN_PUSH_PENALTY;
+				bonus += BROKEN_QSIDE_SHIELD_PENALTY;
 			}
 			if ((pawns &   wreckedKSPawnShield[color]) != 0 ) {  // if castled queensider, definitely push KSIDE pawns
 				bonus += WING_PAWN_PUSH_BONUS;

@@ -60,6 +60,8 @@ typedef unsigned long long U64 ;
 #define  ROOK_ON_SEVENTH_BONUS  20
 #define  WING_PAWN_PUSH_BONUS  20
 #define  TWO_BISHOPS_BONUS  15
+#define  BROKEN_KSIDE_SHIELD_PENALTY -50
+#define  BROKEN_QSIDE_SHIELD_PENALTY -50
 
 //#define  ISOLATED_PAWN_PENALTY  -20
 #define  PAWN_REMOVAL_BONUS  7

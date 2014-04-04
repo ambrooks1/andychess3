@@ -98,6 +98,7 @@ int  validate(char moveStr[]) {
 }
 
 void displayLegalMoves(int numLegalMoves, int legalMoves[200]) {
+	printBoard();
 	printf("# here are the legal moves : ");
 
 	for (int j = 0; j < numLegalMoves; j++) {
