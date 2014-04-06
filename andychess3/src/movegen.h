@@ -52,24 +52,24 @@
 #define ROOK_ATTACK 0
 #define BISHOP_ATTACK 1
 
-void  getLegalCheckEvasions(int moves2[], int* numMoves2);
-void  getLegalMoveList( int moves2[], int* numMoves2);
-int getPawnPushes(int cnt, int* moves, U64 pawns, U64 all, int side, int pieceMoving);
-int getKnightNonCaptures(int cnt, int* moves, U64 knights, U64 target,  int fromType);
-int  getBishopNonCaptures(int cnt, int* moves, U64 bishops, U64  all, U64  target, int fromType);
-int  getRookNonCaptures(int cnt, int* moves, U64 rooks, U64  all, U64  target, int fromType);
-int  getQueenNonCaptures(int cnt, int* moves, U64 queens, U64  all, U64  target, int fromType);
-int getKingNonCaptures(int cnt, int* moves, U64 king, U64 target,  int fromType);
+void  getLegalCheckEvasions(MOVE moves2[], int* numMoves2);
+void  getLegalMoveList( MOVE moves2[], int* numMoves2);
+int getPawnPushes(int cnt, MOVE* moves, U64 pawns, U64 all, int side, int pieceMoving);
+int getKnightNonCaptures(int cnt, MOVE* moves, U64 knights, U64 target,  int fromType);
+int  getBishopNonCaptures(int cnt, MOVE* moves, U64 bishops, U64  all, U64  target, int fromType);
+int  getRookNonCaptures(int cnt, MOVE* moves, U64 rooks, U64  all, U64  target, int fromType);
+int  getQueenNonCaptures(int cnt, MOVE* moves, U64 queens, U64  all, U64  target, int fromType);
+int getKingNonCaptures(int cnt, MOVE* moves, U64 king, U64 target,  int fromType);
 
-int getPawnCapturesAndPromotions(int cnt, int* moves, U64 pawns, U64 all,
+int getPawnCapturesAndPromotions(int cnt, MOVE* moves, U64 pawns, U64 all,
 				U64 enemy, int side, int pieceMoving, int flags, int* board) ;
-int getKnightCaptures(int cnt, int* moves, U64 knights, U64 target,  int fromType, int *board);
-int  getBishopCaptures(int cnt, int* moves, U64 bishops, U64  all, U64  target, int fromType, int* board);
-int  getRookCaptures(int cnt, int* moves, U64 rooks, U64  all, U64  target, int fromType, int* board);
-int  getQueenCaptures(int cnt, int* moves, U64 queens, U64  all, U64  target, int fromType, int *board);
-int getKingCaptures(int cnt, int* moves, U64 king, U64 target,  int fromType, int* board);
+int getKnightCaptures(int cnt, MOVE* moves, U64 knights, U64 target,  int fromType, int *board);
+int  getBishopCaptures(int cnt, MOVE* moves, U64 bishops, U64  all, U64  target, int fromType, int* board);
+int  getRookCaptures(int cnt, MOVE* moves, U64 rooks, U64  all, U64  target, int fromType, int* board);
+int  getQueenCaptures(int cnt, MOVE* moves, U64 queens, U64  all, U64  target, int fromType, int *board);
+int getKingCaptures(int cnt, MOVE* moves, U64 king, U64 target,  int fromType, int* board);
 
 void initializeMoveGen();
-void generateCheckEvasionMoves(int color, int moves[], int *cntMoves);
+void generateCheckEvasionMoves(int color, MOVE* moves, int *cntMoves);
 
 #endif /* MOVEGEN_H_ */

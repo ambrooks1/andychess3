@@ -8,9 +8,9 @@
 
 #ifndef DEFS_H_
 #define  DEFS_H_
-#define NDEBUG
+//#define NDEBUG
 
-#define testing 0
+#define testing 1
 
 typedef unsigned long long U64 ;
 #define C64(constantU64) constantU64##ULL
@@ -87,9 +87,19 @@ typedef unsigned long long U64 ;
 #define EVAL_LAZY_THRESHHOLD  250
 #define DEFAULT_MAX_ITERATIONS  7
 
+typedef struct Move {
+	unsigned int pieceMoving : 4;
+	unsigned int fromIndex   : 6;
+	unsigned int toIndex     : 6;
+	unsigned int capture     : 4;
+	unsigned int type        : 4;
+	unsigned int orderVal    : 8;
+
+} MOVE;
+
 typedef struct LINE {
     int cmove;              // Number of moves in the line.
-    int argmove[150];  // The line.
+    MOVE argmove[150];  // The line.
 }   LINE;
 
 typedef struct BookMove {
@@ -99,7 +109,7 @@ typedef struct BookMove {
 } BookMove;
 
 typedef struct MoveInfo {
-	int move;
+	MOVE move;
 	int value;
 } MoveInfo;
 typedef int (*compfn)(const void*, const void*);
@@ -107,7 +117,7 @@ typedef int (*compfn)(const void*, const void*);
 typedef  struct transpositionTable {
 
 	U64 hashValue;
-	int bestmove;
+	MOVE bestmove;
 	int depthValue;
 	char flags;
 	int nodeScore;
@@ -137,7 +147,7 @@ typedef struct gameState {
 	//used for extensions
 	bool      		promotion;
 	bool      		seventhRankExtension;
-    int 			moveHistory[MAX_PLIES];
+    MOVE 			moveHistory[MAX_PLIES];
 	int 			capturedPieces[MAX_PLIES];
 	int   			moveCounter;
 

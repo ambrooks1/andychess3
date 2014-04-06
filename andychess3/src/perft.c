@@ -68,20 +68,20 @@ void crawl(gameState state, int depth)
 	{
 
 		int numMoves;
-		int moves[200];
+		MOVE moves[MAX_MOVES];
 		getAllMoves(state.color,moves, &numMoves);
 		int flags=state.flags;
 		U64 hash=state.hash;
 
 		for (int i=0; i < numMoves; i++)
 		{
-			int move = moves[i];
+			MOVE move = moves[i];
 			make(move);
 
 			if(depth == 1)
 			{
 				nodes++;
-				int type =moveType(move);
+				int type = move.type;
 				switch(type) {
 				case kcastle: case qcastle :
 
@@ -117,7 +117,7 @@ extern gameState gs;
 U64 perft2( int depth)
 {
 
-    int move_list[256];
+    MOVE move_list[256];
     int n_moves, i;
     U64 nodes = 0;
 
@@ -130,7 +130,7 @@ U64 perft2( int depth)
    // getAllMoves(gs.color, move_list, &n_moves);
 
     for (i = 0; i < n_moves; i++) {
-    	int move = move_list[i];
+    	MOVE move = move_list[i];
     	make(move);
         nodes += perft2(depth - 1);
         unmake(move,flags,hash);

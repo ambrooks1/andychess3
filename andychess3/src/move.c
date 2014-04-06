@@ -12,103 +12,29 @@
 #include "util.h"
 #include <assert.h>
 
-void printMove(int move) {
+bool moveEqual(MOVE x, MOVE y) {
+
+	int i = memcmp(&x, &y, sizeof(MOVE));
+	if (i==0) return true;
+	return false;
+	//if this does not work, try a field by field equals test
+}
+void printMove(MOVE move) {
 	char s[MOVE_STR_SIZE];
 	moveToString(move, s);
 	printf( "%s\n", s);
 
 }
-/**
- *  @return int Piece moving
- */
-int pieceMoving(int move)
-{
-	return ((move >> PIECE_SHIFT) & PIECE_MASK) ;
-}
-// END pieceMoving()
 
-/**
- *  @return int To-index
- */
-int toIndex(int move)
+MOVE createMove(int pieceMoving, int fromIndex, int toIndex, int capture, int type, int ordering)
 {
-	return ((move >> TO_SHIFT) & SQUARE_MASK);
-}
-// END toIndex()
-
-/**
- *  @return int From-index
- */
-int fromIndex(int move)
-{
-	return (move & SQUARE_MASK); // Since the from-index is first in the integer it doesn't need to be shifted first
-}
-// END fromIndex()
-
-/**
- *  @return int Piece captured
- */
-int capture(int move)
-{
-	return ((move >> CAPTURE_SHIFT) & PIECE_MASK) ;
-}
-// END capture()
-
-/**
- *  @return int Move type
- */
-int moveType(int move)
-{
-	return ((move >> TYPE_SHIFT) & TYPE_MASK);
-}
-// END moveType()
-
-/**
- *  @return int Ordering value
- */
-int orderingValue(int move)
-{
-	return (move >> ORDERING_SHIFT); // Since the ordering value is last in the integer it doesn't need a mask
-}
-// END orderingValue()
-
-/**
- *  Clears the ordering value and sets it to the new number
- *
- *  Important: Ordering value in the move integer cannot be >127
- *
- *  @param move The move to change
- *  @param value The new ordering value
- *  @return move The changed moved integer
- */
-int setOrderingValue(int move, int value)
-{
-	move = (move & ORDERING_CLEAR); // Clear the ordering value
-	return (move | (value << ORDERING_SHIFT)); // Change the ordering value and return the new move integer
-}
-//fromType, fromIndex, toIndex, capture, moveType, 0);
-/**
- *  Creates a move integer from the gives values
- *
- *  @param pieceMoving
- *  @param fromIndex
- *  @param toIndex
- *  @param capture
- *  @param type
- *  @param ordering If we want to assign an ordering value at creation time, probably won't be used much for now
- *  @reutrn move The finished move integer
- */
-int createMove(int pieceMoving, int fromIndex, int toIndex, int capture, int type, int ordering)
-{
-	//if (type > 16) System.out.println("AAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
-
-	int move = 0
-			| fromIndex	// from
-			| (toIndex << TO_SHIFT) // to
-			| (pieceMoving  << PIECE_SHIFT) // piece moving
-			| (capture << CAPTURE_SHIFT) //piece captured
-			| (type << TYPE_SHIFT) // move type
-			| (ordering << ORDERING_SHIFT); // ordering value
+	MOVE move={0};
+	move.pieceMoving=pieceMoving;
+	move.fromIndex=fromIndex;
+	move.toIndex=toIndex;
+	move.capture=capture;
+	move.type=type;
+	move.orderVal=ordering;
 	return move;
 }
 
@@ -126,7 +52,7 @@ bool isMoveString(char command[]) {   // from CPW Engine
 	return false;
 
 }
-int createMoveFromString(char moveStr[], int fromType, int capture, int moveType2){
+MOVE createMoveFromString(char moveStr[], int fromType, int capture, int moveType2){
 	assert(isMoveString(moveStr));
 	char fromSquare[3], toSquare[3];
 	fromSquare[0]= moveStr[0];
@@ -144,11 +70,11 @@ int createMoveFromString(char moveStr[], int fromType, int capture, int moveType
 }
 
 
-void moveToString(int move, char s[]) {
-	strcpy(s, getSquareFromIndex(fromIndex(move)));
-	strcat(s, getSquareFromIndex(toIndex(move)));
+void moveToString(MOVE move, char s[]) {
+	strcpy(s, getSquareFromIndex(move.fromIndex));
+	strcat(s, getSquareFromIndex(move.toIndex));
 
-	int type = moveType(move);
+	int type = move.type;
 	if (type == simplePromotionQueen || type == capturePromotionQueen) { //promotion
 		strcat(s, "q");
 	}

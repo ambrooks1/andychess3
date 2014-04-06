@@ -127,7 +127,7 @@ void initializeMoveGen() {
 
 }
 //*****************************************************************************
-int  getQueenNonCaptures(int cnt, int* moves, U64 queens, U64  all, U64  target, int fromType)
+int  getQueenNonCaptures(int cnt, MOVE* moves, U64 queens, U64  all, U64  target, int fromType)
 {
 
 	cnt = getBishopNonCaptures(cnt,moves,queens,all, ~all, fromType);
@@ -136,7 +136,7 @@ int  getQueenNonCaptures(int cnt, int* moves, U64 queens, U64  all, U64  target,
 	return cnt;
 }
 
-int  getQueenCaptures(int cnt, int* moves, U64 queens, U64  all, U64  target, int fromType, int *board)
+int  getQueenCaptures(int cnt, MOVE* moves, U64 queens, U64  all, U64  target, int fromType, int *board)
 {
 	cnt =getBishopCaptures(cnt,moves,queens,all,target, fromType, board);
 	cnt = getRookCaptures(cnt,moves, queens,all,target, fromType, board);
@@ -144,12 +144,13 @@ int  getQueenCaptures(int cnt, int* moves, U64 queens, U64  all, U64  target, in
 	return cnt;
 }
 
-int  getRookCaptures(int cnt, int* moves, U64 rooks, U64  all, U64  target, int fromType, int* board)
+int  getRookCaptures(int cnt, MOVE* moves, U64 rooks, U64  all, U64  target, int fromType, int* board)
 {
 
 	if ( rooks ) do
 	{
-		int victim=-1, moveType, orderValue, move;
+		int victim=-1, moveType, orderValue;
+		MOVE move;
 		int sortType=ROOK;
 		if (fromType > 7) sortType=QUEEN;
 		U64  attacks;
@@ -167,13 +168,8 @@ int  getRookCaptures(int cnt, int* moves, U64 rooks, U64  all, U64  target, int 
 				continue;
 			}
 			orderValue = sortVal[sortType][victim/2];
-			move = 0
-					| (63-idx)	// from
-					| ( (63-squareTo) << TO_SHIFT) // to
-					| (fromType  << PIECE_SHIFT) // piece moving
-					| (victim << CAPTURE_SHIFT) //piece captured
-					| ( captureNoPromotion << TYPE_SHIFT) // move type
-					| (orderValue << ORDERING_SHIFT); // ordering value
+
+			move = createMove(fromType,(63-idx), (63-squareTo), victim, captureNoPromotion, orderValue);
 			moves[cnt++]=move;
 			attacks = attacks & ( attacks - 1 );
 		}
@@ -182,12 +178,13 @@ int  getRookCaptures(int cnt, int* moves, U64 rooks, U64  all, U64  target, int 
 	while (rooks &= rooks-1); // reset LS1B
 	return cnt;
 }
-int  getRookNonCaptures(int cnt, int* moves, U64 rooks, U64  all, U64  target, int fromType)
+int  getRookNonCaptures(int cnt, MOVE* moves, U64 rooks, U64  all, U64  target, int fromType)
 {
 
 	if ( rooks ) do
 	{
-		int victim=-1, moveType, orderValue, move;
+		int victim=-1, moveType, orderValue;
+		MOVE move;
 
 		U64  attacks;
 		victim=noVictim;
@@ -199,13 +196,8 @@ int  getRookNonCaptures(int cnt, int* moves, U64 rooks, U64  all, U64  target, i
 		while (attacks)  {
 			int squareTo = bitScanForward(attacks);
 
-			move = 0
-					| (63-idx)	// from
-					| ( (63-squareTo) << TO_SHIFT) // to
-					| (fromType  << PIECE_SHIFT) // piece moving
-					| (victim << CAPTURE_SHIFT) //piece captured
-					| ( simple << TYPE_SHIFT) // move type
-					| (orderValue << ORDERING_SHIFT); // ordering value
+			move = createMove(fromType,(63-idx), (63-squareTo), victim, simple, orderValue);
+
 			moves[cnt++]=move;
 			attacks = attacks & ( attacks - 1 );
 		}
@@ -215,13 +207,13 @@ int  getRookNonCaptures(int cnt, int* moves, U64 rooks, U64  all, U64  target, i
 
 	return cnt;
 }
-int  getBishopNonCaptures(int cnt, int* moves, U64 bishops, U64  all, U64  target, int fromType)
+int  getBishopNonCaptures(int cnt, MOVE* moves, U64 bishops, U64  all, U64  target, int fromType)
 {
 
 	if ( bishops ) do
 	{
-		int victim=-1, moveType, orderValue, move;
-
+		int victim=-1, moveType, orderValue;
+		MOVE move;
 		U64  attacks;
 		victim=noVictim;
 		moveType=simple;
@@ -231,14 +223,7 @@ int  getBishopNonCaptures(int cnt, int* moves, U64 bishops, U64  all, U64  targe
 
 		while (attacks)  {
 			int squareTo = bitScanForward(attacks);
-
-			move = 0
-					| (63-idx)	// from
-					| ( (63-squareTo) << TO_SHIFT) // to
-					| (fromType  << PIECE_SHIFT) // piece moving
-					| (victim << CAPTURE_SHIFT) //piece captured
-					| ( simple << TYPE_SHIFT) // move type
-					| (orderValue << ORDERING_SHIFT); // ordering value
+			move = createMove(fromType,(63-idx), (63-squareTo), victim, simple, orderValue);
 			moves[cnt++]=move;
 			attacks = attacks & ( attacks - 1 );
 		}
@@ -247,13 +232,13 @@ int  getBishopNonCaptures(int cnt, int* moves, U64 bishops, U64  all, U64  targe
 	while (bishops &= bishops-1); // reset LS1B
 	return cnt;
 }
-int  getBishopCaptures(int cnt, int* moves, U64 bishops, U64  all, U64  target, int fromType, int* board)
+int  getBishopCaptures(int cnt, MOVE* moves, U64 bishops, U64  all, U64  target, int fromType, int* board)
 {
 
 	if ( bishops ) do
 	{
-		int victim=-1, moveType, orderValue, move;
-
+		int victim=-1, moveType, orderValue;
+		MOVE move;
 		U64  attacks;
 		victim=noVictim;
 		moveType=simple;
@@ -272,13 +257,8 @@ int  getBishopCaptures(int cnt, int* moves, U64 bishops, U64  all, U64  target, 
 				continue;
 			}
 			orderValue = sortVal[sortType][victim/2];
-			move = 0
-					| (63-idx)	// from
-					| ( (63-squareTo) << TO_SHIFT) // to
-					| (fromType  << PIECE_SHIFT) // piece moving
-					| (victim << CAPTURE_SHIFT) //piece captured
-					| ( captureNoPromotion << TYPE_SHIFT) // move type
-					| (orderValue << ORDERING_SHIFT); // ordering value
+
+			move = createMove(fromType,(63-idx), (63-squareTo), victim, captureNoPromotion, orderValue);
 			moves[cnt++]=move;
 			attacks = attacks & ( attacks - 1 );
 		}
@@ -287,10 +267,11 @@ int  getBishopCaptures(int cnt, int* moves, U64 bishops, U64  all, U64  target, 
 	while (bishops &= bishops-1); // reset LS1B
 	return cnt;
 }
-int getKingNonCaptures(int cnt, int* moves, U64 king, U64 target,  int fromType)
+int getKingNonCaptures(int cnt, MOVE* moves, U64 king, U64 target,  int fromType)
 {
 	assert(king != 0);
-	int victim=-1, orderValue, move;
+	int victim=-1, orderValue;
+	MOVE move;
 	U64 attacks;
 	victim=noVictim;
 
@@ -300,23 +281,18 @@ int getKingNonCaptures(int cnt, int* moves, U64 king, U64 target,  int fromType)
 
 	while (attacks)  {
 		int squareTo = bitScanForward(attacks);
-		move = 0
-				| (63-idx)	// from
-				| ( (63-squareTo) << TO_SHIFT) // to
-				| (fromType  << PIECE_SHIFT) // piece moving
-				| (victim << CAPTURE_SHIFT) //piece captured
-				| ( simple << TYPE_SHIFT) // move type
-				| (orderValue << ORDERING_SHIFT); // ordering value
+		move = createMove(fromType,(63-idx), (63-squareTo), victim, simple, orderValue);
 		moves[cnt++]=move;
 		attacks = attacks & ( attacks - 1 );
 	}
 
 	return cnt;
 }
-int getKingCaptures(int cnt, int* moves, U64 king, U64 target,  int fromType, int* board)
+int getKingCaptures(int cnt, MOVE* moves, U64 king, U64 target,  int fromType, int* board)
 {
 	assert(king != 0);
-	int victim=-1, orderValue, move;
+	int victim=-1, orderValue;
+	MOVE move;
 	U64 attacks;
 	victim=noVictim;
 
@@ -332,13 +308,7 @@ int getKingCaptures(int cnt, int* moves, U64 king, U64 target,  int fromType, in
 			continue;
 		}
 		orderValue = sortVal[KING][victim/2];
-		move = 0
-				| (63-idx)	// from
-				| ( (63-squareTo) << TO_SHIFT) // to
-				| (fromType  << PIECE_SHIFT) // piece moving
-				| (victim << CAPTURE_SHIFT) //piece captured
-				| ( captureNoPromotion << TYPE_SHIFT) // move type
-				| (orderValue << ORDERING_SHIFT); // ordering value
+		move = createMove(fromType,(63-idx), (63-squareTo), victim, captureNoPromotion, orderValue);
 		moves[cnt++]=move;
 		attacks = attacks & ( attacks - 1 );
 	}
@@ -346,7 +316,7 @@ int getKingCaptures(int cnt, int* moves, U64 king, U64 target,  int fromType, in
 	return cnt;
 }
 
-int  getMovesForTheKing(int cnt, int* moves, U64 king, U64 myPieces,  int fromType, int* board, gameState gs) {
+int  getMovesForTheKing(int cnt, MOVE* moves, U64 king, U64 myPieces,  int fromType, int* board, gameState gs) {
 
 	U64 all= gs.bitboard[ALLPIECES];
 	U64 enemyPieces=gs.bitboard[WHITEPIECES+(1-gs.color)];
@@ -356,12 +326,13 @@ int  getMovesForTheKing(int cnt, int* moves, U64 king, U64 myPieces,  int fromTy
 	return cnt;
 }
 
-int getKnightCaptures(int cnt, int* moves, U64 knights, U64 target,  int fromType, int *board)
+int getKnightCaptures(int cnt, MOVE* moves, U64 knights, U64 target,  int fromType, int *board)
 {
 
 	if ( knights ) do {
 
-		int victim=-1, orderValue, move;
+		int victim=-1, orderValue;
+		MOVE move;
 		U64 attacks;
 		victim=noVictim;
 
@@ -379,13 +350,7 @@ int getKnightCaptures(int cnt, int* moves, U64 knights, U64 target,  int fromTyp
 			int j = fromType/2;
 			int k = victim/2;
 			orderValue = sortVal[j][k];
-			move = 0
-					| (63-idx)	// from
-					| ( (63-squareTo) << TO_SHIFT) // to
-					| (fromType  << PIECE_SHIFT) // piece moving
-					| (victim << CAPTURE_SHIFT) //piece captured
-					| ( captureNoPromotion << TYPE_SHIFT) // move type
-					| (orderValue << ORDERING_SHIFT); // ordering value
+			move = createMove(fromType,(63-idx), (63-squareTo), victim, captureNoPromotion, orderValue);
 			moves[cnt++]=move;
 			attacks = attacks & ( attacks - 1 );
 		}
@@ -395,12 +360,13 @@ int getKnightCaptures(int cnt, int* moves, U64 knights, U64 target,  int fromTyp
 	return cnt;
 }
 
-int getKnightNonCaptures(int cnt, int* moves, U64 knights, U64 target,  int fromType)
+int getKnightNonCaptures(int cnt, MOVE* moves, U64 knights, U64 target,  int fromType)
 {
 
 	if ( knights ) do {
 
-		int victim=-1, orderValue, move;
+		int victim=-1, orderValue;
+		MOVE move;
 		U64 attacks;
 		victim=noVictim;
 
@@ -410,13 +376,8 @@ int getKnightNonCaptures(int cnt, int* moves, U64 knights, U64 target,  int from
 
 		while (attacks)  {
 			int squareTo = bitScanForward(attacks);
-			move = 0
-					| (63-idx)	// from
-					| ( (63-squareTo) << TO_SHIFT) // to
-					| (fromType  << PIECE_SHIFT) // piece moving
-					| (victim << CAPTURE_SHIFT) //piece captured
-					| ( simple << TYPE_SHIFT) // move type
-					| (orderValue << ORDERING_SHIFT); // ordering value
+
+			move = createMove(fromType,(63-idx), (63-squareTo), victim, simple, orderValue);
 			moves[cnt++]=move;
 			attacks = attacks & ( attacks - 1 );
 		}
@@ -426,7 +387,7 @@ int getKnightNonCaptures(int cnt, int* moves, U64 knights, U64 target,  int from
 	return cnt;
 }
 
-int getPawnPushes(int cnt, int* moves, U64 pawns, U64 all, int side, int pieceMoving)
+int getPawnPushes(int cnt, MOVE* moves, U64 pawns, U64 all, int side, int pieceMoving)
 {
 	const int pushDiffs[2]                   = {8, -8};
 
@@ -441,21 +402,15 @@ int getPawnPushes(int cnt, int* moves, U64 pawns, U64 all, int side, int pieceMo
 
 	U64 targets3=  pushes & (~promotions_mask[side]);
 
-	int from, to,move, sortOrder=DEFAULT_SORT_VAL;
+	int from, to, sortOrder=DEFAULT_SORT_VAL;
+	MOVE move;
 
 	while (targets3 != 0){
 		to =  bitScanForward(targets3);
 
 		from = (to - diffs2) % 64;
 
-		move = 0
-				|  (63 -from)	// from
-				|  ( (63 -to) << TO_SHIFT) // to
-				| (pieceMoving  << PIECE_SHIFT) // piece moving
-				| (0 << CAPTURE_SHIFT) //piece captured
-				| ( simple << TYPE_SHIFT) // move type
-				| (sortOrder << ORDERING_SHIFT); // ordering value
-
+		move = createMove(pieceMoving,(63-from), (63-to), 0, simple, sortOrder);
 		moves[cnt++] =move;
 		targets3 &= targets3 - 1;
 	}
@@ -470,14 +425,7 @@ int getPawnPushes(int cnt, int* moves, U64 pawns, U64 all, int side, int pieceMo
 
 		from = (to - diffs3) % 64;
 
-		move = 0
-				|  (63 -from)	// from
-				| ((63 -to) << TO_SHIFT) // to
-				| (pieceMoving  << PIECE_SHIFT) // piece moving
-				| (0 << CAPTURE_SHIFT) //piece captured
-				| (doublePawnMove << TYPE_SHIFT) // move type
-				| (sortOrder << ORDERING_SHIFT); // ordering value
-
+		move = createMove(pieceMoving,(63-from), (63-to), 0, doublePawnMove, sortOrder);
 		moves[cnt++] =move;
 		double_pushes &= double_pushes - 1;
 	}
@@ -489,8 +437,9 @@ U64  circular_left_shift(U64 target, int shift){
 }
 
 
-int addPawnCaptureMoves(int cnt, int* moves, int diff, U64 targets, int pieceMoving, int* board, int moveType){
-	int orderValue, to, from, victim2, move;
+int addPawnCaptureMoves(int cnt, MOVE* moves, int diff, U64 targets, int pieceMoving, int* board, int moveType){
+	int orderValue, to, from, victim2;
+	MOVE move;
 
 	while (targets != 0){
 		to =  bitScanForward(targets);
@@ -503,26 +452,20 @@ int addPawnCaptureMoves(int cnt, int* moves, int diff, U64 targets, int pieceMov
 		}
 		orderValue=orderingValues[victim2];
 
-		move = 0
-				|  63 -from	// from
-				| ( (63 -to) << TO_SHIFT) // to
-				| (pieceMoving  << PIECE_SHIFT) // piece moving
-				| (victim2 << CAPTURE_SHIFT) //piece captured
-				| (moveType << TYPE_SHIFT) // move type
-				| (orderValue << ORDERING_SHIFT); // ordering value
+		move = createMove(pieceMoving,(63-from), (63-to), victim2, moveType, orderValue);
 		moves[cnt++] =move;
 		targets &= targets - 1;
 	}
 	return cnt;
 }
 
-int addPawnCaptureMovesEP(int cnt, int* moves, int diff, U64 targets, int pieceMoving, int side){
+int addPawnCaptureMovesEP(int cnt, MOVE* moves, int diff, U64 targets, int pieceMoving, int side){
 	int victim2[] ={  BP, WP  };
 
 	int lowerbound[] = { 32, 24 };
 	int upperbound[] = { 39, 31 };
-	int from, to, move;
-
+	int from, to;
+	MOVE move;
 	while (targets != 0){
 		to =  bitScanForward(targets);
 		from = (to - diff) % 64;
@@ -532,20 +475,14 @@ int addPawnCaptureMovesEP(int cnt, int* moves, int diff, U64 targets, int pieceM
 			continue;
 		}
 
-		move = 0
-				|  (63 -from)	// from
-				| ( (63 -to) << TO_SHIFT) // to
-				| (pieceMoving  << PIECE_SHIFT) // piece moving
-				| (victim2[side] << CAPTURE_SHIFT) //piece captured
-				| (epCapture << TYPE_SHIFT) // move type
-				| (26 << ORDERING_SHIFT); // ordering value
+		move = createMove(pieceMoving,(63-from), (63-to), victim2[side], epCapture, 26);
 		moves[cnt++] =move;
 		targets &= targets - 1;
 	}
 	return cnt;
 }
 
-int addPawnAttacks(int cnt, int* moves, U64 pawns,  U64 enemy, int side, int pieceMoving, int flags, int* board) {
+int addPawnAttacks(int cnt, MOVE* moves, U64 pawns,  U64 enemy, int side, int pieceMoving, int flags, int* board) {
 	//just for white for the moment
 
 	U64 attacks, ep_attacks, promotions, targets;
@@ -580,28 +517,21 @@ int addPawnAttacks(int cnt, int* moves, U64 pawns,  U64 enemy, int side, int pie
 	}
 	return cnt;
 }
-int addPawnPushMoves(int cnt, int* moves, int diff, U64 targets,  int moveType, int pieceMoving, int sortOrder){
-	int from,to,move;
+int addPawnPushMoves(int cnt, MOVE* moves, int diff, U64 targets,  int moveType, int pieceMoving, int sortOrder){
+	int from,to;
+	MOVE move;
 
 	while (targets != 0){
 		to =  bitScanForward(targets);
 
 		from = (to - diff) % 64;
-
-		move = 0
-				|  63 -from	// from
-				| ( (63 -to) << TO_SHIFT) // to
-				| (pieceMoving  << PIECE_SHIFT) // piece moving
-				| (0 << CAPTURE_SHIFT) //piece captured
-				| (moveType << TYPE_SHIFT) // move type
-				| (sortOrder << ORDERING_SHIFT); // ordering value
-
+		move = createMove(pieceMoving,(63-from), (63-to), 0, moveType, sortOrder);
 		moves[cnt++] =move;
 		targets &= targets - 1;
 	}
 	return cnt;
 }
-int getPawnCapturesAndPromotions(int cnt, int* moves, U64 pawns, U64 all,
+int getPawnCapturesAndPromotions(int cnt, MOVE* moves, U64 pawns, U64 all,
 		U64 enemy, int side, int pieceMoving, int flags, int* board)  {
 
 	const int pushDiffs[]                   = {8, -8};
@@ -619,7 +549,7 @@ int getPawnCapturesAndPromotions(int cnt, int* moves, U64 pawns, U64 all,
 	return cnt;
 }
 
-void generateCheckEvasionMoves(int color, int moves[], int *cntMoves) {
+void generateCheckEvasionMoves(int color, MOVE* moves, int *cntMoves) {
 	const int pushDiffs[]                   = {8, -8};
 	// note that we must still verify the legality of the king and pawn moves, after make,
 	//but for the the other generated moves, this is not needed
@@ -812,10 +742,10 @@ int* isInCheck2( int color, int piece, int type, int kingIdx, U64 allPieces, gam
 	}
 	return 0;
 }
-void  getLegalCheckEvasions(int moves2[], int* numMoves2)
+void  getLegalCheckEvasions(MOVE moves2[], int* numMoves2)
 	{
 	    int j=0;
-		int moves[MAX_MOVES];
+		MOVE moves[MAX_MOVES];
 		int numMoves;
 		//printf("begin getLegalCheckEvasions; gs.color %d\n", gs.color);
 		generateCheckEvasionMoves(gs.color, moves, &numMoves);
@@ -826,7 +756,7 @@ void  getLegalCheckEvasions(int moves2[], int* numMoves2)
 
 		for (int i=0; i < numMoves; i++)
 		{
-			int myMoveType = moveType(moves[i]);
+			int myMoveType = moves[i].type;
 			if (myMoveType == kcastle || myMoveType == qcastle) {    //castling
 				if (isInCheck( gs.color)) {
 					continue;
@@ -859,10 +789,10 @@ void  getLegalCheckEvasions(int moves2[], int* numMoves2)
 		}
 		*numMoves2=j;
 	}
-void  getLegalMoveList(int moves2[], int* numMoves2)
+void  getLegalMoveList(MOVE moves2[], int* numMoves2)
 	{
 	    int j=0;
-		int moves[MAX_MOVES];
+		MOVE moves[MAX_MOVES];
 		int numMoves;
 		//printf("begin; gs.color %d\n", gs.color);
 		getAllMoves(gs.color, moves, &numMoves);
@@ -873,7 +803,7 @@ void  getLegalMoveList(int moves2[], int* numMoves2)
 
 		for (int i=0; i < numMoves; i++)
 		{
-			int myMoveType = moveType(moves[i]);
+			int myMoveType = moves[i].type;
 			if (myMoveType == kcastle || myMoveType == qcastle) {    //castling
 				if (isInCheck( gs.color)) {
 					continue;

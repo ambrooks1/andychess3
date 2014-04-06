@@ -8,7 +8,9 @@
 #ifndef MOVE_H_
 #define  MOVE_H_
 #include <stdbool.h>
+#include "defs.h"
 
+#define					nomove				   0
 #define 				simple	   		       1
 #define 				kcastle	    	       2
 #define 				qcastle	    	       3
@@ -32,17 +34,18 @@
 #define TYPE_MASK  31 // 5 bits
 #define ORDERING_CLEAR  0x1FFFFFF //  00000001111111111111111111111111 use with & which clears the ordering value
 
+bool moveEqual(MOVE x, MOVE y);
 bool isMoveString(char * command);
-void moveToString(int move, char s[]);
-int createMoveFromString(char str[], int fromType, int capture, int moveType);
-int createMove(int pieceMoving, int fromIndex, int toIndex, int capture, int type, int ordering);
-int moveType(int move);
-int orderingValue(int move);
-int setOrderingValue(int move, int value);
-int capture(int move);
-int fromIndex(int move);
-int toIndex(int move);
-int pieceMoving(int move);
-void printMove(int move);
+void moveToString(MOVE move, char s[]);
+MOVE createMoveFromString(char str[], int fromType, int capture, int moveType);
+MOVE createMove(int pieceMoving, int fromIndex, int toIndex, int capture, int type, int ordering);
+int moveType(MOVE move);
+int orderingValue(MOVE move);
+MOVE setOrderingValue(MOVE move, int value);
+int capture(MOVE move);
+int fromIndex(MOVE move);
+int toIndex(MOVE move);
+int pieceMoving(MOVE move);
+void printMove(MOVE move);
 
 #endif /* MOVE_H_ */

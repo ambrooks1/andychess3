@@ -27,6 +27,7 @@
 //void write(char* message);
 
 bool printLogging=true;
+static  const MOVE emptyMove={0};
 
 extern int fiftyMoveCounter;
 extern int stateHistCtr;
@@ -67,7 +68,7 @@ int     numCutoffs=0,
 
 int history[2][64][64];
 
-int killer[MAXDEPTH][NUMKILLERS];
+MOVE killer[MAXDEPTH][NUMKILLERS];
 bool        useIID,do_LMR,
 	extensionsOn, futilityOn, extendedFutility,
 	turnNullOn,deltaPruneOn,
@@ -117,7 +118,7 @@ void zeroOutCounters() {
 	if (x % 4 ==0 ) clearHistory();
 	for (int i=0; i < MAXDEPTH; i++) {
 		for (int j=0; j < NUMKILLERS; j++) {
-			killer[i][j]=0;
+			killer[i][j]=emptyMove;
 		};
 	}
 }
@@ -132,7 +133,7 @@ void calcBestMove( char *moveStr) {
 
 	initGlobals();
 
-	int move = calcBestMoveAux( MIN_INFINITY, MAX_INFINITY);
+	MOVE move = calcBestMoveAux( MIN_INFINITY, MAX_INFINITY);
 	movesMade++;
 	moveToString(move, moveStr);
 }
@@ -154,7 +155,7 @@ void sort_by_value(MoveInfo arr[], int size) {
 	}
 }
 
-void makeMoveInfo(int movelist[], MoveInfo movelist2[],  int cntMoves) {
+void makeMoveInfo(MOVE movelist[], MoveInfo movelist2[],  int cntMoves) {
 	for (int i=0; i < cntMoves; i++) {
 		movelist2[i].move = movelist[i];
 		movelist2[i].value=0;
@@ -174,7 +175,7 @@ void printMovelist(MoveInfo mi[], int cntMoves) {
 }
 
 void getTheMovelist(MoveInfo movelist2[], int *cntMoves2) {
-	int movelist[200];
+	MOVE movelist[MAX_MOVES];
 	bool ownKingInCheck=isInCheck( gs.color);
 
 	int cntMoves;
@@ -193,18 +194,18 @@ void printPV(LINE *line) {
 	int cnt = line->cmove;
 	//printf("size of pv = %d\n", cnt);
 	for (int i=0; i < cnt; i++) {
-						int move = line->argmove[i];
-						moveToString(move,s);
-						printf("%s ", s);
+		MOVE move = line->argmove[i];
+		moveToString(move,s);
+		printf("%s ", s);
 	}
 	printf("\n");
 }
-int calcBestMoveAux( int alpha, int beta)  {
+MOVE calcBestMoveAux( int alpha, int beta)  {
 
 
-	int    bestMove=0;
+	MOVE    bestMove={0};
 	int 	cntMoves;
-	MoveInfo movelist[200];
+	MoveInfo movelist[MAX_MOVES];
 
 	getTheMovelist(movelist, &cntMoves);
 
@@ -243,9 +244,10 @@ int calcBestMoveAux( int alpha, int beta)  {
 
 		for (int i=0; i < cntMoves; i++)
 		{
-			int move = movelist[i].move;
+			MOVE move = movelist[i].move;
 
-			int myMoveType = moveType(move);
+			int myMoveType = move.type;
+
 			//assert(myMoveType >=1 && myMoveType <= 9);
 			if (!isLegal( move, flags2, hash, myMoveType)) continue;
 
@@ -253,7 +255,7 @@ int calcBestMoveAux( int alpha, int beta)  {
 			int searchDepth=currentDepth;
 			int score;
 			//assert(searchDepth < MAX_DEPTH);
-			score = search( alpha, beta,  searchDepth,MATE,true,false, false, &line);
+			score = search( alpha, beta,  searchDepth,MATE,true,false, &line);
 
 			if (usingTime && stopSearch) {
 				unmake(move, flags2, hash);
@@ -307,7 +309,7 @@ int calcBestMoveAux( int alpha, int beta)  {
 	//printPV(&line);
 	return bestMove;
 }
-void printLoggingInfo(int currentDepth, int maxIterations, int bestMove, int score) {
+void printLoggingInfo(int currentDepth, int maxIterations, MOVE bestMove, int score) {
 	char str[LOGGING_STRING_SIZE];
 	char s[MOVE_STR_SIZE];
 	moveToString(bestMove,s);
@@ -342,7 +344,7 @@ void printLoggingInfo(int currentDepth, int maxIterations, int bestMove, int sco
 	printf("#%s\n",str);
 	fflush(stdout);
 }
-bool isLegal (const int move, int flags2, U64 hash, int moveType) {
+bool isLegal (const MOVE move, int flags2, U64 hash, int moveType) {
 
 	if (moveType == kcastle || moveType == qcastle) {    //castling
 		if (isInCheck( gs.color)) {
@@ -409,10 +411,10 @@ In the intermediate node this our alpha becomes the opponent's beta
  *
  */
 
-void displayMoves(int movelist[], int numMoves) {
+void displayMoves(MOVE movelist[], int numMoves) {
 	for (int i=0; i < numMoves; i++) {
-		int move = movelist[i];
-		int sortval = orderingValue(move);
+		MOVE move = movelist[i];
+		int sortval = move.orderVal;
 		char s[5];
 		moveToString(move, s);
 		printf("%s order %d\n", s, sortval);
@@ -430,7 +432,7 @@ bool isRepetition() {
 	return false;
 }
 int search( int alpha, int beta,
-		int depth, int mate, bool allowNull, bool extended, bool returnBestMove, LINE * pline)
+		int depth, int mate, bool allowNull, bool extended, LINE * pline)
 {
 	assert(depth < MAX_DEPTH);
 	LINE line;
@@ -450,13 +452,6 @@ int search( int alpha, int beta,
 		}
 	}
 	U64 hash=gs.hash;
-	if (usingRepetitionCheck) {
-		if (isRepetition()) {
-			  if (!returnBestMove) {
-				  return 0;
-			  }
-			}
-	}
 
 	int flags2=gs.flags;
 	bool foundPv=false;
@@ -478,7 +473,7 @@ int search( int alpha, int beta,
 	}
 
 	int bestScore = MIN_INFINITY;
-	int bestMove = INVALID_MOVE;
+	MOVE bestMove = {0};
 
 
 	//null move; ( not allowed when in check )
@@ -496,7 +491,7 @@ int search( int alpha, int beta,
 		gs.color = 1-gs.color;
 		if ( gs.color==BLACK) gs.hash = gs.hash ^ gs.side;
 		assert(depth < MAX_DEPTH);
-		int nullMoveScore= -search( -beta, -beta + 1,depth - 1 - R,  mate-1, false,false,false, &line);
+		int nullMoveScore= -search( -beta, -beta + 1,depth - 1 - R,  mate-1, false,false, &line);
 
 		gs.color = 1-gs.color;
 		if ( gs.color==BLACK) gs.hash = gs.hash ^ gs.side;
@@ -559,11 +554,11 @@ int search( int alpha, int beta,
 			   | there is no best move from the hash table, then do a   |
 			   | shallow search to find a best move to search first.    |
 			   ---------------------------------------------------------*/
-	if ( (useIID ) && ( alpha != beta+1 ) && ( bestMove == INVALID_MOVE) && (depth > 3) && (allowNull) )  {
+	if ( (useIID ) && ( alpha != beta+1 ) && ( bestMove.type==nomove) && (depth > 3) && (allowNull) )  {
 		//bestMove = search( alpha, beta,
 		//		depth - 2, mate, allowNull, extended, true)   ;
 	}
-	int movelist[200];
+	MOVE movelist[MAX_MOVES];
 	int legal=0;
 
 	int childrenSearched=0;
@@ -586,7 +581,7 @@ int search( int alpha, int beta,
 
 		case MOVEGEN_HASHMOVE_PHASE:	//normal
 		case MOVEGEN_HASHMOVE2_PHASE:   // for check evasions
-			if (bestMove != INVALID_MOVE) {
+			if (bestMove.type != nomove) {
 				if ( isMoveLegal(bestMove)) {
 					movelist[0]=bestMove;
 					numMoves=1;
@@ -640,11 +635,11 @@ int search( int alpha, int beta,
 		//displayMoves(movelist, numMoves);
 		for (int i=0; i < numMoves; i++)
 		{
-			int move = getNextMove(i, movelist, numMoves) ;
-			if (move==0) {
+			MOVE move = getNextMove(i, movelist, numMoves) ;
+			if (move.type==nomove) {
 				continue;
 			}
-			int myMoveType = moveType(move);
+			int myMoveType = move.type;
 
 			if (!isLegal( move, flags2, hash, myMoveType)) {
 				continue;
@@ -661,8 +656,8 @@ int search( int alpha, int beta,
 
 			if (futilityOn && fprune && (childrenSearched > 0)) {
 				if (!opponentIsInCheck) {
-					if (isCapture(move)) {
-						materialEval += valueMap[capture(move)];
+					if (isCapture(move.type)) {
+						materialEval += valueMap[move.capture];
 					}
 					if((materialEval+fmargin) <= alpha) {
 						futilityPrune++;
@@ -676,7 +671,7 @@ int search( int alpha, int beta,
 			int searchDepth=depth-1;
 
 			//late move reduction ? Here is where the idea is from: http://www.glaurungchess.com/lmr.html
-			int myOrderingValue=orderingValue(move);
+			int myOrderingValue= move.orderVal;
 
 			if (do_LMR) {
 				score = lmr_search( alpha, beta, searchDepth, mate,
@@ -733,8 +728,7 @@ int search( int alpha, int beta,
 		tt_hashStore(hash, depth, bestMove,bestScore, alpha, beta);
 		// *** alpha and beta are needed to determine meaning of score (bound type)
 	}
-	if (returnBestMove)
-		return bestMove;
+
 	return bestScore;
 }
 int pv_search( int alpha, int beta,
@@ -742,12 +736,12 @@ int pv_search( int alpha, int beta,
 	int score;
 	assert(searchDepth < MAX_DEPTH);
 	if (foundPv) {
-		score = -search(   -alpha - 1, -alpha, searchDepth,mate - 1, true,extended, false, line);   // reduced window pv search
+		score = -search(   -alpha - 1, -alpha, searchDepth,mate - 1, true,extended, line);   // reduced window pv search
 		if ((score > alpha) && (score < beta)) // Check for failure.
-			score = -search(  -beta, -alpha,searchDepth, mate - 1, true,extended, false, line);   // do regular search
+			score = -search(  -beta, -alpha,searchDepth, mate - 1, true,extended, line);   // do regular search
 	}
 	else {
-		score = -search(  -beta, -alpha,searchDepth, mate - 1, true,extended, false, line);   // do regular search
+		score = -search(  -beta, -alpha,searchDepth, mate - 1, true,extended, line);   // do regular search
 	}
 	return score;
 }
@@ -759,7 +753,7 @@ int lmr_search( int alpha, int beta,
 	assert(depth < MAX_DEPTH);
 
 	if (legal == 1) {
-		score = -search( -beta, -alpha,depth, mate - 1, true,extended, false, line);        //normal alpha-beta search
+		score = -search( -beta, -alpha,depth, mate - 1, true,extended, line);        //normal alpha-beta search
 	}
 	else
 	{
@@ -767,7 +761,7 @@ int lmr_search( int alpha, int beta,
 				&& (myOrderingValue >= CAPTURE_SORT_VALS + 1)
 				&& (!opponentIsInCheck) && ( beta - alpha <= 1))
 		{
-			score = -search(   -alpha - 1, -alpha, depth-1,mate - 1, true,extended, false, line);   // reduced window pv search
+			score = -search(   -alpha - 1, -alpha, depth-1,mate - 1, true,extended,  line);   // reduced window pv search
 		}
 		else
 		{
@@ -775,24 +769,24 @@ int lmr_search( int alpha, int beta,
 		}
 		if(score > alpha)
 		{
-			score = -search(   -alpha - 1, -alpha, depth,mate - 1, true,extended, false, line);   // reduced window pv search
+			score = -search(   -alpha - 1, -alpha, depth,mate - 1, true,extended, line);   // reduced window pv search
 			if ((score > alpha) && (score < beta)) // Check for failure.
-				score = -search(  -beta, -alpha,depth, mate - 1, true,extended, false, line);   // do regular search
+				score = -search(  -beta, -alpha,depth, mate - 1, true,extended, line);   // do regular search
 		}
 	}
 	return score;
 }
 
-void updateKillerAndHistory( int depth, int move) {
-	int f = fromIndex(move);
-	int t = toIndex(move);
+void updateKillerAndHistory( int depth, MOVE move) {
+	int f = move.fromIndex;
+	int t = move.toIndex;
 
 	if (history[gs.color][f][t] < HISTORY_POINTS)
 		history[gs.color][f][t] ++;
 
-	int killerValue=killer[depth][0];
+	MOVE killerValue=killer[depth][0];
 
-	if (killerValue == 0 ) {
+	if (killerValue.type == nomove ) {
 		killer[depth][0]=move;
 	}
 	else {
@@ -825,7 +819,7 @@ int quies(  int alpha, int beta, int depth)
 		alpha = val;
 	}
 	int numMoves;
-	int movelist[150];
+	MOVE movelist[150];
 	generateCapturesAndPromotions(gs.color, movelist,&numMoves, gs.bitboard, gs.board);
 	if (numMoves==0 ) return val;
 
@@ -840,8 +834,8 @@ int quies(  int alpha, int beta, int depth)
 	for (int i=0; i < numMoves; i++)
 	{
 		//int move = movelist[i];
-		int move = getNextMove(i, movelist, numMoves);
-		if (move==0) continue;
+		MOVE move = getNextMove(i, movelist, numMoves);
+		if (move.type==nomove) continue;
 		make(move);
 		numQuiesNodes++;
 		if (  isInCheck( 1-gs.color) ) {
@@ -874,29 +868,30 @@ int quies(  int alpha, int beta, int depth)
 	return alpha;
 }
 
-void orderMovesCaps( int* movelist, int numMoves,  U64 hash, int depth, int hashMove, bool hashFound) {
+void orderMovesCaps( MOVE* movelist, int numMoves,  U64 hash, int depth, MOVE hashMove, bool hashFound) {
 	for (int i=0; i < numMoves; i++)
 	{
-		int move = movelist[i];
-		if (hashMove==move && hashFound) {
-			movelist[i] = 0;   // we already searched it, so set to zero
+		MOVE move = movelist[i];
+		if (moveEqual(hashMove, move) && hashFound) {
+			movelist[i].type = nomove;   // we already searched it, so set to zero
 			break;
 		}
 
 	}
 }
 
-void orderMoves( int* movelist, int numMoves, int depth, int hashMove, bool hashFound) {
+void orderMoves( MOVE* movelist, int numMoves, int depth, MOVE hashMove, bool hashFound) {
 
 	for (int i=0; i < numMoves; i++)
 	{
-		int move = movelist[i];
+		MOVE move = movelist[i];
 
-		if ( (hashMove==move) && (hashFound)) {
-			movelist[i]=0;
+		if ( ( moveEqual(hashMove,move)) && (hashFound)) {
+			movelist[i].type=nomove;
 			continue;
 		}
-		int type =((move >> TYPE_SHIFT) & TYPE_MASK);
+		int type = move.type;
+				//((move >> TYPE_SHIFT) & TYPE_MASK);
 
 		if (type < 6 ) // simple, castling, or pawn push
 		{
@@ -904,9 +899,10 @@ void orderMoves( int* movelist, int numMoves, int depth, int hashMove, bool hash
 
 			if (orderByKillers) {
 				for (int j=0; j< NUMKILLERS; j++) {
-					if (move == killer[depth][j]) {
-						movelist[i] = (movelist[i] & ORDERING_CLEAR); // Clear the ordering value
-						movelist[i]  = (movelist[i] | ((CAPTURE_SORT_VALS + 1) << ORDERING_SHIFT)); // Change the ordering value and return the new move integer
+					if (moveEqual(move, killer[depth][j])) {
+						movelist[i].orderVal=CAPTURE_SORT_VALS + 1;
+								//(movelist[i] & ORDERING_CLEAR); // Clear the ordering value
+						//movelist[i]  = (movelist[i] | ((CAPTURE_SORT_VALS + 1) << ORDERING_SHIFT)); // Change the ordering value and return the new move integer
 						killerFound=true;
 						break;
 					}
@@ -916,14 +912,16 @@ void orderMoves( int* movelist, int numMoves, int depth, int hashMove, bool hash
 			if (killerFound) continue;  //if not, try history
 
 			if (orderByHistory) {
-				int from =  (move & SQUARE_MASK);
-				int to = ((move >> TO_SHIFT) & SQUARE_MASK);
+				int from =   move.fromIndex;
+						//(move & SQUARE_MASK);
+				int to = move.toIndex;
+						//((move >> TO_SHIFT) & SQUARE_MASK);
 				// lets order these from 33 to 127
 				int historyVal = history[gs.color][from][to];
 				if (historyVal > 0) {
 					if (historyVal > HISTORY_POINTS) historyVal=HISTORY_POINTS;
 					int sortval= min(NO_HISTORY_SORT_VAL,  CAPTURE_SORT_VALS + 2 + (HISTORY_POINTS - historyVal));
-					movelist[i] = setOrderingValue ( move, sortval);
+					movelist[i].orderVal= sortval;
 
 				}
 			}
@@ -933,20 +931,21 @@ void orderMoves( int* movelist, int numMoves, int depth, int hashMove, bool hash
 	}
 	//Util.sort(movelist);
 }
-void  orderCapturesBySee( int* movelist, int numMoves) {
+void  orderCapturesBySee( MOVE* movelist, int numMoves) {
 	int newValue2=INVALID_MOVE;
 
 	for (int i=0; i < numMoves; i++)
 	{
-		int move = movelist[i];
-		int type = ((move >> TYPE_SHIFT) & TYPE_MASK);
+		MOVE move = movelist[i];
+		int type = move.type;
+				//((move >> TYPE_SHIFT) & TYPE_MASK);
 
 		if (type != captureNoPromotion ) {
 
 			continue;
 		}
 		//capture with promotion already was given a good ordering in movegen
-		int myOrderingValue=orderingValue(move);
+		int myOrderingValue=move.orderVal;
 		// we don't want to waste time by doing a SEE on cheap attackers with expensive victims ( idea from Robert Hyatt/ Crafty )
 		// the following are cases of relatively expensive attackers versus victims ie; R X b
 		if (myOrderingValue >= 2 && myOrderingValue <= 14) {
@@ -956,7 +955,7 @@ void  orderCapturesBySee( int* movelist, int numMoves) {
 
 		int seeValue=  see( move, gs.color, gs.board); //  captures either get a zero value for no good, or a value from 25 to 975
 		if (seeValue==0) {
-			movelist[i]=0;
+			movelist[i].type=nomove;
 			continue;
 		}
 
@@ -989,7 +988,7 @@ void  orderCapturesBySee( int* movelist, int numMoves) {
 									newValue2=9;
 								}
 
-		movelist[i] = setOrderingValue ( move, newValue2);
+		movelist[i].orderVal= newValue2;
 	}
 
 	//Util.sort(movelist);
@@ -1005,14 +1004,15 @@ bool isCapture(int myMoveType) {
 
 }
 
-int getNextMove(int i, int moves[], int numMoves) {
+MOVE getNextMove(int i, MOVE* moves, int numMoves) {
 	if (numMoves==1)
 		return moves[i];
+
 	for (int j = i+1; j < numMoves; j++)
 	{
-		if ( moves[j] < moves[i] )
+		if ( moves[j].orderVal < moves[i].orderVal )
 		{
-			int temp=moves[i];
+			MOVE temp=moves[i];
 			moves[i]=moves[j];
 			moves[j]=temp;
 		}

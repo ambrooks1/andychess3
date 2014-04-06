@@ -21,7 +21,7 @@ int bitScanForward(U64 bb) ;
 U64 nortFill(U64 gen) ;
 U64 soutFill(U64 gen) ;
 
-void printMoves(int *moves, int numMoves) {
+void printMoves(MOVE *moves, int numMoves) {
 
 	for (int i=0; i < numMoves; i++)
 	{
@@ -326,12 +326,15 @@ U64 setBitLong(U64 x, int position)
 		        ^ openFiles(wpawns, bpawns);
 	}
 
-void sort(int array[], int n) {
-	 	int c, d, swap;
+void sort(MOVE array[], int n) {
+	 	int c, d;
+	 	MOVE swap;
 	 	for (c = 0 ; c < ( n - 1 ); c++){
 	 		for (d = 0 ; d < n - c - 1; d++)
 	 		{
-	 			if (array[d] > array[d+1]) /* For decreasing order use < */
+	 			int i = memcmp(&array[d], &array[d+1], sizeof(MOVE));
+	 			if ( i < 0)
+	 			//if (array[d] > array[d+1]) /* For decreasing order use < */
 	 			{
 	 				swap       = array[d];
 	 				array[d]   = array[d+1];
@@ -341,11 +344,13 @@ void sort(int array[], int n) {
 	 	}
 	 }
 
-int dedup(int arr[], int size) {    //removes duplicates from int array
+int dedup(MOVE arr[], int size) {    //removes duplicates from int array
 	 	sort(arr, size);
+
 	 	int curr = 0, next = 0;
+
 	 	while (next < size) {
-	 		while (next < size && arr[next] == arr[curr])
+	 		while (next < size && moveEqual(arr[next], arr[curr]))
 	 			next++;
 	 		if (next < size)
 	 			arr[++curr] = arr[next++];

@@ -57,7 +57,7 @@ extern U64 pawnCheckArray[2][64];    //white, black
 
 gameState gs = { .initialized=false };
 
-void printMove(int move);
+void printMove(MOVE move);
 
 int getEPSquare() {
 		return  gs.flags >>EP_SHIFT;
@@ -75,11 +75,13 @@ bool isSameSquareRecapture() {
 	int value1 = valueMap[lastVictim];
 	int value2 = valueMap[previousVictim];
 	if ( value1 != value2)  return false;
-	int move1 = gs.moveHistory[gs.moveCounter -1];
-	int move2 = gs.moveHistory[gs.moveCounter -2];
+	MOVE move1 = gs.moveHistory[gs.moveCounter -1];
+	MOVE move2 = gs.moveHistory[gs.moveCounter -2];
 
-	int toSquare1 =  ((move1 >> TO_SHIFT) & SQUARE_MASK);
-	int toSquare2 =  ((move2 >> TO_SHIFT) & SQUARE_MASK);
+	int toSquare1 =  move1.toIndex;
+			//((move1 >> TO_SHIFT) & SQUARE_MASK);
+	int toSquare2 =  move2.toIndex;
+			//((move2 >> TO_SHIFT) & SQUARE_MASK);
 
 	if (toSquare1==toSquare2) {
 		return true;
@@ -401,11 +403,11 @@ bool canCastle(int index, U64 allPieces) {
 	return false;
 }
 
-void getAllMoves( int color, int moves[], int* cntMoves) {
+void getAllMoves( int color, MOVE moves[], int* cntMoves) {
 	int cntNonCaps, cntCaps;
-	int noncaps[150];
+	MOVE noncaps[150];
 	generateNonCaptures(color, noncaps, &cntNonCaps, gs.bitboard);
-	int caps[75];
+	MOVE caps[75];
 	generateCapturesAndPromotions(color, caps, &cntCaps, gs.bitboard, gs.board);
 
 	//printf("number of moves: caps %d number of noncaps %d \n",cntCaps,  cntNonCaps);
@@ -427,7 +429,7 @@ void getAllMoves( int color, int moves[], int* cntMoves) {
 	}
 	*cntMoves=j;
 }
-void generateCapturesAndPromotions(int color, int moves[], int* cntMoves, U64 bitboard[], int board[] ) {
+void generateCapturesAndPromotions(int color, MOVE moves[], int* cntMoves, U64 bitboard[], int board[] ) {
 
 	int cnt=0;
 	U64 all= bitboard[ALLPIECES];
@@ -448,7 +450,7 @@ void generateCapturesAndPromotions(int color, int moves[], int* cntMoves, U64 bi
 }
 
 
-void generateNonCaptures(int color, int moves[], int* numMoves, U64 bitboard[] ) {     // don't forget to free moves after using
+void generateNonCaptures(int color, MOVE moves[], int* numMoves, U64 bitboard[] ) {     // don't forget to free moves after using
 	U64 all= bitboard[ALLPIECES];
 	assert(all != 0);
 
@@ -462,24 +464,24 @@ void generateNonCaptures(int color, int moves[], int* numMoves, U64 bitboard[] )
 
 	if (color == BLACK) {
 		if (  canCastle(BKSIDE, all))  {
-			int move = createMove(BK, 4, 6,0, kcastle,  0)	;
+			MOVE move = createMove(BK, 4, 6,0, kcastle,  0)	;
 			moves[cnt++]=move;
 		}
 		if (  canCastle(BQSIDE, all) ) {
 
-			int move = createMove(BK, 4, 2, 0, qcastle,  0)	;
+			MOVE move = createMove(BK, 4, 2, 0, qcastle,  0)	;
 			moves[cnt++]=move;
 		}
 	}
 	else {
 		if (  canCastle(WKSIDE, all)) {
 
-			int move = createMove(WK, 60, 62,0, kcastle,  0)	;
+			MOVE move = createMove(WK, 60, 62,0, kcastle,  0)	;
 			moves[cnt++]=move;
 		}
 		if (  canCastle(WQSIDE, all)) {
 
-			int move = createMove(WK, 60, 58,0, qcastle,  0)	;
+			MOVE move = createMove(WK, 60, 58,0, qcastle,  0)	;
 			moves[cnt++]=move;
 		}
 	}
@@ -541,7 +543,7 @@ int reversePSTValue(int pieceMoving, int to, int from) {
 	}
 	return 0;
 }
-void make(int move) {
+void make(MOVE move) {
 	//assert ( move != 0);
 
 	const int castleRook[]={WR,BR};
@@ -563,9 +565,12 @@ void make(int move) {
 	gs.promotion=false;
 	gs.moveHistory[gs.moveCounter]= move;
 	gs.capturedPieces[gs.moveCounter]= -1;
-	int to = ((move >> TO_SHIFT) & SQUARE_MASK);
-	int from = move & SQUARE_MASK;
-	int myPieceMoving = (move >> PIECE_SHIFT) & PIECE_MASK;
+	int to = move.toIndex;
+			//((move >> TO_SHIFT) & SQUARE_MASK);
+	int from = move.fromIndex;
+			//move & SQUARE_MASK;
+	int myPieceMoving = move.pieceMoving;
+			//(move >> PIECE_SHIFT) & PIECE_MASK;
 	//int type = (move >> TYPE_SHIFT) & TYPE_MASK;
 
 	U64 fromBB    =   1L <<   ( 63 - from);
@@ -583,11 +588,11 @@ void make(int move) {
 	resetCastling[0]=false;
 	resetCastling[1]=false;
 	int victim;
-	int theMoveType = moveType(move);
+	int theMoveType = move.type;
 	if (theMoveType < 1 || theMoveType > 9 ) {
 		printf("movetype %d \n", theMoveType);
 		printMove(move);
-		int myPiecemoving = pieceMoving(move);
+		int myPiecemoving = move.pieceMoving;
 		printf("from %d to %d pieceMoving %d\n", from, to, myPiecemoving);
 
 	}
@@ -704,7 +709,8 @@ void make(int move) {
 		break;
 
 	case captureNoPromotion:
-		victim = (move >> CAPTURE_SHIFT) & PIECE_MASK ;
+		victim = move.capture;
+				//(move >> CAPTURE_SHIFT) & PIECE_MASK ;
 		gs.capturedPieces[gs.moveCounter]= victim;
 		int posVal;
 		if (myPieceMoving < 6 ) {
@@ -732,7 +738,8 @@ void make(int move) {
 
 		promPiece = pp[gs.color];
 
-		victim = (move >> CAPTURE_SHIFT) & PIECE_MASK ;
+		victim = move.capture;
+		//(move >> CAPTURE_SHIFT) & PIECE_MASK ;
 		gs.positional[gs.color] -= 50;
 		gs.board[to] =  pp[gs.color];
 		gs.capturedPieces[gs.moveCounter]= victim;
@@ -787,7 +794,8 @@ void make(int move) {
 		newto= to + offset2[gs.color];
 		gs.board[newto]= EMPTY;
 		gs.board[to] =  myPieceMoving;
-		victim = (move >> CAPTURE_SHIFT) & PIECE_MASK ;
+		victim = move.capture;
+				//(move >> CAPTURE_SHIFT) & PIECE_MASK ;
 		gs.positional[1-gs.color] -= getPSTValue2(victim,newto);
 		gs.capturedPieces[gs.moveCounter]= victim;
 		posVal =  getPSTValue(myPieceMoving, to, from);
@@ -813,9 +821,9 @@ void make(int move) {
 		char s[MOVE_STR_SIZE];
 		moveToString(move,s);
 		printf("%s\n",s);
-		printf("movetype %d" , moveType(move));
-		printf("piecemoving %d ", pieceMoving(move));
-		printf("victim %d \n" , capture(move));
+		printf("movetype %d" , move.type);
+		printf("piecemoving %d ", move.pieceMoving);
+		printf("victim %d \n" , move.capture);
 		break;
 	}
 	gs.moveCounter++;
@@ -855,11 +863,15 @@ void make(int move) {
 	gs.color=1-gs.color;
 
 }
-void unmake(int move, int flags2, U64 hash2) {
-	int to = ((move >> TO_SHIFT) & SQUARE_MASK);
-	int from = move & SQUARE_MASK;
-	int myPieceMoving = (move >> PIECE_SHIFT) & PIECE_MASK;
-	int type = (move >> TYPE_SHIFT) & TYPE_MASK;
+void unmake(MOVE move, int flags2, U64 hash2) {
+	int to = move.toIndex;
+			//((move >> TO_SHIFT) & SQUARE_MASK);
+	int from = move.fromIndex;
+			//move & SQUARE_MASK;
+	int myPieceMoving = move.pieceMoving;
+			//(move >> PIECE_SHIFT) & PIECE_MASK;
+	int type = move.type;
+			//(move >> TYPE_SHIFT) & TYPE_MASK;
 
 	U64 fromBB    =   1L <<   (63 -from);
 	U64  toBB     =   1L <<   ( 63 - to);
@@ -916,9 +928,9 @@ void unmake(int move, int flags2, U64 hash2) {
 		break;
 
 	case captureNoPromotion:
-		victim = capture(move);
+
 		gs.bitboard[myPieceMoving]  ^=  fromToBB;         //put the moving piece back
-		victim = capture(move);  // ie; WP or WQ or BP, etc.
+		victim = move.capture;  // ie; WP or WQ or BP, etc.
 		gs.bitboard[victim] ^=  toBB;       // flip bit of the captured piece
 		gs.board[to] =  victim;
 		int value = valueMap[victim];
@@ -942,7 +954,7 @@ void unmake(int move, int flags2, U64 hash2) {
 		gs.bitboard[myPieceMoving]  ^=  toBB;
 		gs.bitboard[12+color2]  ^=  toBB;
 
-		victim = capture(move);  // ie; WP or WQ or BP, etc.
+		victim = move.capture; // ie; WP or WQ or BP, etc.
 		gs.bitboard[victim] ^=  toBB;       // toggle bit of the captured piece
 		gs.bitboard[12+(1-color2)] ^=  toBB;       // toggle bit of the captured piece
 
@@ -1091,22 +1103,26 @@ bool isInCheckAux( U64 king, int color) {    //color is the guys who are checkin
 }
 
 //to see if a hash move is legal before we dare to play it !
-bool isMoveLegal ( int move) {
+bool isMoveLegal ( MOVE move) {
 
 	// we need to make sure that the squares between from and to, if they exist, are empty
 	// if the pieceMoving is a rook, bishop or queen, whether this is a simple of capture move
 
-	int to = ((move >> TO_SHIFT) & SQUARE_MASK);
+	int to =  move.toIndex;
+			//((move >> TO_SHIFT) & SQUARE_MASK);
 	if (to < 0 || to > 63) return false;
 
-	int from = move & SQUARE_MASK;
+	int from = move.fromIndex;
+			//move & SQUARE_MASK;
 	if (from < 0 || from > 63) return false;
 
-	int myPieceMoving = (move >> PIECE_SHIFT) & PIECE_MASK;
+	int myPieceMoving = move.pieceMoving;
+			//(move >> PIECE_SHIFT) & PIECE_MASK;
 	if (myPieceMoving < 0 || myPieceMoving > 11) return false;
 
-	int victim = (move >> CAPTURE_SHIFT) & PIECE_MASK ;
-	int moveType2 = moveType(move);
+	int victim = move.capture;
+			//(move >> CAPTURE_SHIFT) & PIECE_MASK ;
+	int moveType2 = move.type;
 	int color2 = myPieceMoving % 2;
 	if (color2 != gs.color) return false;
 

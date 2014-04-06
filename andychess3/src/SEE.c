@@ -143,7 +143,7 @@ int other(int side) {
 
 
 // This is the main routine used by search
-int see( int move, int side, int board[])  // the side that is moving
+int see( MOVE move, int side, int board[])  // the side that is moving
 {
 	// does not work for stack of three XRay attackers/defenders, only for stack of two
 	// does not work for xray bishop/queen behind attacking pawn  (:(
@@ -151,7 +151,8 @@ int see( int move, int side, int board[])  // the side that is moving
 	//int from2 = Move2.fromIndex(move);
 	//int to2 = Move2.toIndex(move);
 
-	int to2 = ((move >> 6) & 63);
+	int to2 = move.toIndex;
+			//((move >> 6) & 63);
 	int victimSquare = 63 - to2;
 	const int valueMap[] = { 100, 100, 325,  325,
 			350, 	350,  500,
@@ -198,7 +199,8 @@ int see( int move, int side, int board[])  // the side that is moving
 	// move the original attackers to the top of the stack
 	// 'side' is the attacking side
 
-	int from2 =  (move & 63);
+	int from2 =  move.fromIndex;
+			//(move & 63);
 	int attacker = board[from2];    //the initial attacker
 	for (int i=0; i <= ptr[side]; i++) {
 		if (attackers[side][i] == attacker) {

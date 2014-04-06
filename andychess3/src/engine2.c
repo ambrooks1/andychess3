@@ -25,7 +25,7 @@
 #include "tester.h"
 
 typedef struct saveMove {
-	int move;
+	MOVE move;
 	int flags;
 	U64 hash;
 } saveMove;
@@ -52,7 +52,7 @@ bool outOfBook=true;
 extern int createdBook;
 
 //private static Book2 book;
-int legalMoves[MAX_MOVES];
+MOVE legalMoves[MAX_MOVES];
 int numLegalMoves=0;
 
 bool forceMode=true;
@@ -62,8 +62,8 @@ int movesMade=0;
 int sideToMove=NONE, computerSide=NONE;    // 0 is WHITE, 1 is BLACK
 bool myTurn=false;
 
-bool irreversible(int move) {
-	int moveType2 = moveType(move);
+bool irreversible(MOVE move) {
+	int moveType2 = move.type;
 	if (moveType2==simple) return false;
 	return true;
 }
@@ -85,19 +85,20 @@ int toggleBoolean(bool b) {
 	else return true;
 }
 
-int  validate(char moveStr[]) {
+MOVE  validate(char moveStr[]) {
+	MOVE move={0};
 	for (int i=0; i < numLegalMoves; i++) {
-		int legalMove = legalMoves[i];
+		MOVE legalMove = legalMoves[i];
 		char mvStr[MOVE_STR_SIZE];
 		moveToString(legalMove, mvStr);
 		if (strcmp(moveStr,mvStr)==0) {
 			return legalMove;
 		}
 	}
-	return 0;
+	return move;
 }
 
-void displayLegalMoves(int numLegalMoves, int legalMoves[200]) {
+void displayLegalMoves(int numLegalMoves, MOVE legalMoves[MAX_MOVES]) {
 	printBoard();
 	printf("# here are the legal moves : ");
 
@@ -121,8 +122,8 @@ void  applyMove(char moveStr[])
 		write("Game over; no legal moves");
 		return;
 	}
-	int move = validate(moveStr);
-	if (move == 0) {
+	MOVE move = validate(moveStr);
+	if (move.type == nomove) {
 		printf("Illegal move %s\n", moveStr);
 		fflush(stdout);
 		displayLegalMoves(numLegalMoves, legalMoves);

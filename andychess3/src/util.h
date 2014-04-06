@@ -8,12 +8,12 @@
 #ifndef UTIL_H_
 #define UTIL_H_
 
-int dedup(int arr[], int size);
+int dedup(MOVE arr[], int size);
 int min(int x, int y);
 int bitScanForward(U64 bb);
 int convertPiece(char c);
 char reverseConvertPiece(int i);
-void printMoves(int *moves, int numMoves);
+void printMoves(MOVE *moves, int numMoves);
 int getIndexFromSquare ( char *square);
 const char* getSquareFromIndex(int idx);
 

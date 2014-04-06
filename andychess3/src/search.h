@@ -42,22 +42,22 @@ bool isRepetition();
 void printMovelist(MoveInfo mi[], int cntMoves) ;
 void calcBestMove(char *moveStr) ;
 int quies(  int alpha, int beta, int depth);
-bool isLegal (const int move, int flags2, U64 hash, int moveType) ;
-int getNextMove(int i, int* moves, int numMoves);
+bool isLegal (const MOVE move, int flags2, U64 hash, int moveType) ;
+MOVE getNextMove(int i, MOVE* moves, int numMoves);
 int lmr_search( int alpha, int beta,
 		int depth, int mate, bool extended, int legal,
 		bool opponentIsInCheck,  int myOrderingValue, LINE *line) ;
-int calcBestMoveAux( int alpha, int beta);
-void updateKillerAndHistory( int depth, int move) ;
-void orderMoves( int* movelist, int numMoves, int depth, int hashMove, bool hashFound);
-void orderMovesCaps( int* movelist, int numMoves,  U64 hash, int depth, int hashMove, bool hashFound);
-void printLoggingInfo(int currentDepth, int maxIterations, int bestMove, int score);
+MOVE calcBestMoveAux( int alpha, int beta);
+void updateKillerAndHistory( int depth, MOVE move) ;
+void orderMoves( MOVE* movelist, int numMoves, int depth, MOVE hashMove, bool hashFound);
+void orderMovesCaps( MOVE* movelist, int numMoves,  U64 hash, int depth, MOVE hashMove, bool hashFound);
+void printLoggingInfo(int currentDepth, int maxIterations, MOVE bestMove, int score);
 int pv_search( int alpha, int beta,
 		int mate, bool extended, bool foundPv, int searchDepth, LINE *line) ;
 bool isCapture(int myMoveType) ;
 int search( int alpha, int beta,
-		int depth, int mate, bool allowNull, bool extended, bool returnBestMove, LINE *line);
+		int depth, int mate, bool allowNull, bool extended, LINE *line);
 
-void  orderCapturesBySee( int* movelist, int numMoves) ;
+void  orderCapturesBySee( MOVE* movelist, int numMoves) ;
 
 #endif /* SEARCH_H_ */

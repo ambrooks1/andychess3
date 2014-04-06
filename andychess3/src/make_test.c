@@ -49,7 +49,7 @@ void setEPSquareOnDoubleMove() {
 	printf("Running setEPSquareOnDoubleMove\n");
 	char fen[] = "2b2rk1/1p2p2p/1p2n1p1/r2BNp2/3p4/4P3/PPP2PPP/R4RK1 w - - 1 19";
 	parseFen(fen);
-	int move = createMoveFromString("c2c4", WP, 0, doublePawnMove);
+	MOVE move = createMoveFromString("c2c4", WP, 0, doublePawnMove);
 	make(move);
 	int epSquare = getEPSquare();
 	printf("epSquare %d\n", epSquare);
@@ -83,7 +83,7 @@ void capturePromotionTestBlack() {
 		long hash = gs.hash;
 		gameState gs2=gs;
 
-		int move = createMoveFromString(textMove, myFromType, victim, capturePromotionQueen);
+		MOVE move = createMoveFromString(textMove, myFromType, victim, capturePromotionQueen);
 		make(move);
 		unmake(move, flags, hash);
 		assertEquals(gs2,gs);
@@ -98,7 +98,7 @@ void enPassantTestBlack2() {
 	char textMove[] = "c4d3";
 	int myFromType=BP;
 	//DO AN ENPASSANT CAPTURE, SHOULD FAIL
-	int move = createMoveFromString(textMove, myFromType, WP, epCapture);
+	MOVE move = createMoveFromString(textMove, myFromType, WP, epCapture);
 
 	make(move);
 	//gs.print();
@@ -118,7 +118,7 @@ void simplePromotionTestWhite() {
 	long hash = gs.hash;
 
 
-	int move = createMoveFromString(textMove, myFromType, victim, simplePromotionQueen);
+	MOVE move = createMoveFromString(textMove, myFromType, victim, simplePromotionQueen);
 	make(move);
 	unmake(move, flags, hash);
 	assertEquals(gs2,gs);
@@ -130,7 +130,7 @@ void make_test() {
 	char fen[] = "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 1";
 	parseFen(fen);
 	int numMoves;
-	int movelist[200];
+	MOVE movelist[MAX_MOVES];
 	generateNonCaptures(gs.color, movelist, &numMoves, gs.bitboard);
 
 	gameState gs2= gs;
@@ -140,7 +140,7 @@ void make_test() {
 
 	for (int i=0; i < numMoves; i++)
 	{
-		int move = movelist[i];
+		MOVE move = movelist[i];
 		//printf("doing make/unmake on move  %s\n",  moveToString(move));
 		make(move);
 		unmake(move, flags, hash2);
@@ -154,7 +154,7 @@ void bishopCheck() {
     	char s[] = "2kr1bnr/ppp2ppp/8/4n3/6b1/2P2N2/PPK1BPPP/RNB4R b - - 3 9";
     	printf("Running bishop_check\n");
 
-    	int move = createMoveFromString("g4f5", BB, 0, simple);
+    	MOVE move = createMoveFromString("g4f5", BB, 0, simple);
     	int flags2 = gs.flags;
 		long hash2 = gs.hash;
 		parseFen(s);
@@ -172,7 +172,7 @@ void promotionTestWhite() {
 	parseFen(fen);
 
 	char moveStr[]= "g7g8q";
-	int move = createMoveFromString(moveStr, WP, 0, simplePromotionQueen);
+	MOVE move = createMoveFromString(moveStr, WP, 0, simplePromotionQueen);
 	make(move);
 	int cnt = popCount(gs.bitboard[WQ]);
 	assert(cnt==1);

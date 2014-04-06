@@ -39,7 +39,7 @@ int tt_getScore(U64 hash2) {
 	int index2=tt_getIndex(hash2);
 	return tt[index2].nodeScore;
 }
-int tt_getMove(U64 hash2) {
+MOVE tt_getMove(U64 hash2) {
 	int index2=tt_getIndex(hash2);
 	return tt[index2].bestmove;
 }
@@ -62,7 +62,7 @@ bool  tt_probeHash(U64 hash2)
 	return false;
 }
 
-void tt_hashStore(U64 hash2, int depth2, int move,  int score, int alpha, int beta )
+void tt_hashStore(U64 hash2, int depth2, MOVE move,  int score, int alpha, int beta )
 {
 	char boundType = 0;
 

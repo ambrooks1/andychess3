@@ -33,8 +33,8 @@ void run_search( char *fen, char *answer) ;
 
 
 void hash_test_aux(char moveStr[], int pieceMoving, int victim, int myMoveType) {
-	int move = createMoveFromString(moveStr, pieceMoving, victim, myMoveType);
-	if (move != 0)
+	MOVE move = createMoveFromString(moveStr, pieceMoving, victim, myMoveType);
+	if (move.type != nomove)
 		make(move);
 }
 void hash_test() {
@@ -62,7 +62,7 @@ void check_evasion_aux(char *fen, int i) {
 	//printf("check evasion moves\n");
 	parseFen(fen);
 	int cntMoves;
-	int movelist[200];
+	MOVE movelist[MAX_MOVES];
 	getLegalCheckEvasions( movelist, &cntMoves);
 	/*for (int i=0; i < cntMoves; i++) {
 		printMove(movelist[i]);
@@ -70,7 +70,7 @@ void check_evasion_aux(char *fen, int i) {
 	//printf("legal moves\n");
 	parseFen(fen);
 	int cntMoves2;
-	int movelist2[200];
+	MOVE movelist2[MAX_MOVES];
 	getLegalMoveList( movelist2, &cntMoves2);
 	/*for (int i=0; i < cntMoves2; i++) {
 			printMove(movelist2[i]);
@@ -197,12 +197,12 @@ static char*  isLegal_test() {
 	char fen[] = "rn1qkbnr/ppp2pp1/3p4/4p2p/4P2P/3P3b/PPP2PP1/RNBQKBNR w KQkq - 0 1";
 	parseFen(fen);
 	int numMoves;
-	int moves[200];
+	MOVE moves[MAX_MOVES];
 	generateNonCaptures(gs.color, moves, &numMoves, gs.bitboard);
 
 	for (int i=0; i < numMoves; i++)
 	{
-		int move = moves[i];
+		MOVE move = moves[i];
 		//printf("Testing move ");
 		//printMove(move);
 		if (!isMoveLegal(move)) {
@@ -229,7 +229,7 @@ static  char * check_test() {
 void testAux(char fen[], int num) {
 	parseFen(fen);
 	int numMoves;
-	int movelist[200];
+	MOVE movelist[MAX_MOVES];
 	getLegalMoveList( movelist, &numMoves);
 	printf("number of moves = %d\n", numMoves);
 	assert(num==numMoves);
@@ -398,11 +398,11 @@ void bookTest() {
 
 		printf("second hash = %llu\n", hash2);
 		assert(hash==hash2);
-	   // printBookMoves();
+	    printBookMoves();
 		char moveStr[5]="1234";
 
 		getBookMove(hash, moveStr);
-		//printf("The book move is : %s\n", moveStr);
+		printf("The book move is : %s\n", moveStr);
 		assert(
 				(strcmp(moveStr,"e2e4")== 0 ) ||
 				(strcmp(moveStr,"d2d4")== 0 ) ||
@@ -428,18 +428,19 @@ void various_tests() {
 
 		do_eval();
 
-		bookTest();
+		//bookTest();
 
 }
 void do_all_tests(void) {
 
 	initializeAll();
 	//various_tests();
-	winAtChess();
+	//winAtChess();
 	//char *fen= "rnbq1rk1/pp3ppp/5n2/3p4/2pP4/P1B5/1P1NPPPP/R2QKB1R w KQ - 2 10";
 	//char *fen="rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
     //char *fen="1k6/1p5p/6p1/1P2p1P1/4P3/5K2/5P2/2q5 w - - 4 49";
-	//runOnePosition(fen);
+	char *fen="2kr4/7p/1pqb1Qp1/8/8/3R1pP1/P1r2P1P/5RK1 w - - 0 32";
+	runOnePosition(fen);
 	printf("all tests successfully completed\n");
 }
 
